@@ -25,14 +25,14 @@
   }
 
   html[data-theme="dark"] {
-    --paper: #1b1815;
-    --paper-dim: #241f19;
-    --ink: #efe9df;
-    --ink-soft: #b3a891;
+    --paper: #18191b;
+    --paper-dim: #212328;
+    --ink: #e9eaec;
+    --ink-soft: #9a9da5;
     --rust: #e08a5e;
     --rust-dim: #c96f45;
     --green: #7fa375;
-    --line: #3a352b;
+    --line: #34363a;
   }
 
   * { box-sizing: border-box; }
@@ -1146,10 +1146,10 @@ function renderAssignedClients() {
             <div class="client-meta">Year: ${client.taxYear} | Inputter: ${client.inputter} | ${total} docs</div>
           </div>
           <div style="text-align: right; font-size: 12px; font-weight: 600;">
-            <span style="background: #fff3cd; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">⏳${pending}</span>
-            <span style="background: #fce4e4; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">↩️${sendBack}</span>
-            <span style="background: #cfe2ff; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✓${reviewed}</span>
-            <span style="background: #d1e7dd; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✅${completed}</span>
+            <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">⏳${pending}</span>
+            <span style="background: #fce4e4; color: #922b21; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">↩️${sendBack}</span>
+            <span style="background: #cfe2ff; color: #084298; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✓${reviewed}</span>
+            <span style="background: #d1e7dd; color: #0f5132; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✅${completed}</span>
           </div>
         </div>
 
@@ -1420,7 +1420,7 @@ function renderCanopyView() {
   if (canopyRecords.length === 0) {
     html += `
       <tr style="border-bottom: 1px solid var(--line);">
-        <td colspan="12" style="padding: 20px; text-align: center; color: #999;">
+        <td colspan="12" style="padding: 20px; text-align: center; color: var(--ink-soft);">
           No clients in Client Summary yet. Have an Inputter click Sync on the Inputter dashboard, then come back here and click [🔗 Match & Sync].
         </td>
       </tr>
@@ -1429,32 +1429,33 @@ function renderCanopyView() {
     canopyRecords.forEach(record => {
       const reviewStatus = record.reviewerstatus || 'Pending';
       const reviewStatusColor = reviewStatus.includes('Completed') ? '#d1e7dd' : reviewStatus.includes('Send Back') ? '#fce4e4' : reviewStatus.includes('Reviewed') ? '#cfe2ff' : '#fff3cd';
+      const reviewStatusTextColor = reviewStatus.includes('Completed') ? '#0f5132' : reviewStatus.includes('Send Back') ? '#922b21' : reviewStatus.includes('Reviewed') ? '#084298' : '#856404';
       const matched = !!record.canopyMatched;
 
       html += `
-        <tr style="border-bottom: 1px solid var(--line); background: ${matched ? 'var(--paper)' : '#fce4e4'};">
-          <td style="padding: 8px; border: 1px solid var(--line); font-weight: 600;">${record.clientname || '—'}</td>
-          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.reviewer || '—'}</td>
-          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.totalDocs !== '' && record.totalDocs != null ? record.totalDocs : '—'}</td>
-          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.pendingDocs !== '' && record.pendingDocs != null ? record.pendingDocs : '—'}</td>
+        <tr style="border-bottom: 1px solid var(--line); background: ${matched ? 'var(--paper)' : 'rgba(220,38,38,0.10)'};">
+          <td style="padding: 8px; border: 1px solid var(--line); font-weight: 600; color: var(--ink);">${record.clientname || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px; color: var(--ink);">${record.reviewer || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px; color: var(--ink);">${record.totalDocs !== '' && record.totalDocs != null ? record.totalDocs : '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px; color: var(--ink);">${record.pendingDocs !== '' && record.pendingDocs != null ? record.pendingDocs : '—'}</td>
           <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">
-            <span style="background: ${reviewStatusColor}; padding: 2px 4px; border-radius: 2px; font-weight: 600;">
+            <span style="background: ${reviewStatusColor}; color: ${reviewStatusTextColor}; padding: 2px 4px; border-radius: 2px; font-weight: 600;">
               ${reviewStatus.includes('Completed') ? '✅' : reviewStatus.includes('Send Back') ? '↩️' : reviewStatus.includes('Reviewed') ? '✓' : '⏳'}
               ${reviewStatus.substring(0, 30)}
             </span>
           </td>
-          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.taxpreparer || '—'}</td>
-          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.canopytaxyear || '—'}</td>
-          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.taskreturntype || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px; color: var(--ink);">${record.taxpreparer || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px; color: var(--ink);">${record.canopytaxyear || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px; color: var(--ink);">${record.taskreturntype || '—'}</td>
           <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">
             <span style="background: #e8f4f8; padding: 2px 4px; border-radius: 2px; color: #003d8b;">
               ${record.subtaskstatus ? record.subtaskstatus.substring(0, 40) : '—'}
             </span>
           </td>
-          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px; color: var(--ink);">
             ${record.subtaskname ? record.subtaskname.split('; ').map(t => `<div>${t.substring(0, 30)}</div>`).join('') : '—'}
           </td>
-          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.subtaskassignee || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px; color: var(--ink);">${record.subtaskassignee || '—'}</td>
           <td style="padding: 8px; border: 1px solid var(--line); text-align: center;">
             ${matched
               ? `<span style="background: #d1e7dd; padding: 2px 4px; border-radius: 2px; color: #0f5132; font-size: 9px;">✓ Matched (${record.canopyTaskCount})</span>`
@@ -1530,25 +1531,25 @@ function renderSummary() {
     const notesDisplay = docNotes.length > 0 ? docNotes.slice(0, 2).join(' | ') : 'No comments';
 
     const progressPercent = totalDocs > 0 ? Math.round((reviewedDocs / totalDocs) * 100) : 0;
-    const rowColor = progressPercent === 100 ? '#d1e7dd' : progressPercent > 50 ? '#cfe2ff' : progressPercent > 0 ? '#fff3cd' : 'white';
+    const rowBg = progressPercent === 100 ? 'rgba(76,107,71,0.14)' : progressPercent > 50 ? 'rgba(37,99,235,0.10)' : progressPercent > 0 ? 'rgba(217,119,6,0.14)' : 'var(--paper)';
 
     html += `
-      <tr style="border-bottom: 1px solid var(--line); background: ${rowColor};">
-        <td style="padding: 12px; border: 1px solid var(--line); font-weight: 600;">${client.name}</td>
-        <td style="padding: 12px; border: 1px solid var(--line); font-size: 12px;">${client.inputter}</td>
-        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; cursor: help;" title="${docList}">
+      <tr style="border-bottom: 1px solid var(--line); background: ${rowBg};">
+        <td style="padding: 12px; border: 1px solid var(--line); font-weight: 600; color: var(--ink);">${client.name}</td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 12px; color: var(--ink);">${client.inputter}</td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; cursor: help; color: var(--ink);" title="${docList}">
           <strong>${totalDocs} docs:</strong> ${docListDisplay}
         </td>
         <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px;">
-          <span style="background: #e8f4f8; padding: 2px 4px; border-radius: 2px; color: #003d8b;">
+          <span style="background: var(--paper-dim); padding: 2px 4px; border-radius: 2px; color: var(--rust); font-weight: 600;">
             ${totalDocs > 0 ? `✓ ${docStatuses.filter(s => s !== 'Not Inputted').length}/${totalDocs}` : 'None'}
           </span>
         </td>
-        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px;">
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; color: var(--ink);">
           ${reviewStatusDisplay}
-          <br><small style="color: #666;">${reviewedDocs}/${totalDocs} reviewed (${progressPercent}%)</small>
+          <br><small style="color: var(--ink-soft);">${reviewedDocs}/${totalDocs} reviewed (${progressPercent}%)</small>
         </td>
-        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; color: var(--ink);">
           ${docNotes.length > 0 ? '✓ ' + notesDisplay.substring(0, 50) : 'No comments'}
         </td>
       </tr>
