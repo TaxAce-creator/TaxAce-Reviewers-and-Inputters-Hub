@@ -1183,12 +1183,12 @@ function openDocumentSelector() {
   let currentCat = '';
   allDocs.forEach(doc => {
     if (doc.category !== currentCat) {
-      html += `<div style="font-weight: 600; font-size: 12px; background: #f5f5f5; padding: 8px 12px; margin: 12px 0 8px 0;">${doc.category}</div>`;
+      html += `<div style="font-weight: 600; font-size: 12px; background: var(--paper-dim); color: var(--ink); padding: 8px 12px; margin: 12px 0 8px 0; border-radius: 3px;">${doc.category}</div>`;
       currentCat = doc.category;
     }
     html += `
-      <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <div style="padding: 8px 12px; border-bottom: 1px solid var(--line);">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--ink);">
           <input type="checkbox" id="doc_${doc.id}" checked>
           <span>${doc.name}</span>
         </label>
@@ -1337,12 +1337,12 @@ function renderAddMoreDocuments() {
 
   availableDocs.forEach(doc => {
     if (doc.category !== currentCat) {
-      html += `<div style="font-weight: 600; font-size: 12px; background: #f5f5f5; padding: 8px 12px; margin: 12px 0 8px 0;">${doc.category}</div>`;
+      html += `<div style="font-weight: 600; font-size: 12px; background: var(--paper-dim); color: var(--ink); padding: 8px 12px; margin: 12px 0 8px 0; border-radius: 3px;">${doc.category}</div>`;
       currentCat = doc.category;
     }
     html += `
-      <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <div style="padding: 8px 12px; border-bottom: 1px solid var(--line);">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--ink);">
           <input type="checkbox" id="addDoc_${doc.id}">
           <span style="font-size: 13px;">${doc.name}</span>
         </label>
@@ -2319,7 +2319,7 @@ function renderKnowledgeBase() {
     return matchesSearch && matchesCategory;
   });
 
-  filtered.sort((a, b) => a.title.localeCompare(b.title));
+  filtered.sort((a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' }));
 
   if (filtered.length === 0) {
     listEl.innerHTML = '<p style="color: var(--ink-soft); text-align: center; padding: 30px;">No guides found. Try a different search or add a new guide.</p>';
