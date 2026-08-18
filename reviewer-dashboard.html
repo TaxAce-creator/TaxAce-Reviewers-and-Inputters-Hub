@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaxAce Tax Reviewer Dashboard</title>
+<script>
+  // Apply saved theme before paint to avoid a light-mode flash.
+  (function() {
+    var saved = localStorage.getItem('taxace-hub-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --paper-dim: #f2f2f2;
+    --ink: #241f18;
+    --ink-soft: #5c5343;
+    --rust: #b5502e;
+    --rust-dim: #8f3f24;
+    --green: #4c6b47;
+    --line: #dcdcdc;
+  }
+
+  html[data-theme="dark"] {
+    --paper: #1b1815;
+    --paper-dim: #241f19;
+    --ink: #efe9df;
+    --ink-soft: #b3a891;
+    --rust: #e08a5e;
+    --rust-dim: #c96f45;
+    --green: #7fa375;
+    --line: #3a352b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea {
+    background: var(--paper-dim);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+
+  .theme-toggle {
+    padding: 7px 14px;
+    border: 1px solid var(--ink);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .theme-toggle:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .hub-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .hub-back-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  /* ---- Tax Term Reference (glossary) ---- */
+  .glossary-toolbar {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;
+  }
+  .glossary-grid { display: block; }
+  .glossary-category { margin-bottom: 28px; }
+  .glossary-category-title {
+    font-size: 13px; font-weight: 700; color: var(--ink); text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--rust); display: flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none;
+  }
+  .glossary-category-title:hover { color: var(--rust); }
+  .category-toggle-icon { font-size: 11px; transition: transform 0.2s ease; display: inline-block; }
+  .category-toggle-icon.collapsed { transform: rotate(-90deg); }
+  .glossary-category-count {
+    font-size: 11px; font-weight: 600; color: var(--ink-soft); background: var(--paper-dim);
+    padding: 2px 8px; border-radius: 20px; text-transform: none; letter-spacing: normal;
+    border: 1px solid var(--line);
+  }
+  .glossary-grid-inner {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;
+  }
+  .glossary-grid-inner.collapsed { display: none; }
+
+  .term-card {
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--rust);
+    border-radius: 3px;
+    padding: 14px 16px 16px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+
+  .term-card h3 {
+    font-size: 14.5px; font-weight: 700; margin: 0 0 8px; color: var(--ink);
+    border-bottom: 1px dotted var(--line); padding-bottom: 8px;
+  }
+
+  .term-card ul {
+    margin: 0 0 10px; padding-left: 18px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.6;
+  }
+
+  .term-card img {
+    width: 100%; max-height: 180px; object-fit: contain; border-radius: 4px;
+    border: 1px solid var(--line); margin-top: 6px; background: var(--paper-dim);
+    cursor: zoom-in; transition: opacity .15s ease;
+  }
+  .term-card img:hover { opacity: 0.85; }
+
+  .lightbox-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82);
+    z-index: 1000; align-items: center; justify-content: center; padding: 40px;
+    cursor: zoom-out;
+  }
+  .lightbox-overlay.open { display: flex; }
+  .lightbox-overlay img {
+    max-width: 90vw; max-height: 85vh; border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    cursor: default;
+  }
+  .lightbox-caption {
+    position: absolute; bottom: 28px; left: 0; right: 0; text-align: center;
+    color: #fff; font-size: 14px; font-weight: 600;
+  }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 28px; color: #fff; font-size: 32px;
+    font-weight: 300; cursor: pointer; line-height: 1; background: none; border: none;
+    padding: 4px 10px;
+  }
+  .lightbox-close:hover { color: #ccc; background: none; }
+
+  .save-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--paper); padding: 12px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease; z-index: 2000;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .save-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .save-toast.error { background: var(--rust); }
+
+  .add-term-form {
+    display: none; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 4px; padding: 18px 20px; margin-bottom: 20px;
+  }
+  .add-term-form label {
+    display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--ink-soft); margin-bottom: 6px; margin-top: 14px;
+  }
+  .add-term-form label:first-child { margin-top: 0; }
+  .add-term-form input[type="text"], .add-term-form textarea, .add-term-form select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 3px; font-size: 13px; font-family: inherit;
+  }
+  .add-term-form textarea { resize: vertical; min-height: 80px; }
+  .photo-preview { margin-top: 10px; max-width: 240px; max-height: 160px; border-radius: 4px; border: 1px solid var(--line); display: none; }
+  .add-term-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+  .term-photo-actions, .term-guide-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .photo-btn, .photo-remove-btn, .guide-link-btn, .guide-add-btn, .guide-edit-btn, .guide-remove-btn {
+    padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--paper-dim); color: var(--ink-soft);
+    transition: all .15s ease; text-decoration: none; display: inline-block;
+  }
+  .photo-btn:hover, .guide-add-btn:hover, .guide-edit-btn:hover { border-color: var(--rust); color: var(--rust); }
+  .photo-remove-btn:hover, .guide-remove-btn:hover { border-color: #c0392b; color: #c0392b; }
+  .guide-link-btn { border-color: var(--rust); color: var(--rust); }
+  .guide-link-btn:hover { background: var(--rust); color: white; }
+
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding: 20px 36px;
+    background: linear-gradient(135deg, transparent, transparent 38px, rgba(181,80,46,0.035) 38px, rgba(181,80,46,0.035) 76px) var(--paper);
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 0 0 4px;
+    font-size: 28px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 16px 36px;
+    background: var(--paper-dim);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background .15s ease;
+  }
+
+  .btn.primary {
+    background: var(--rust);
+    color: white;
+  }
+
+  .btn.primary:hover {
+    background: var(--rust-dim);
+  }
+
+  .btn.secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+
+  .btn.secondary:hover {
+    background: var(--ink);
+    color: white;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 36px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .tab-button {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink-soft);
+    border-bottom: 3px solid transparent;
+    transition: all .2s ease;
+  }
+
+  .tab-button:hover {
+    color: var(--ink);
+  }
+
+  .tab-button.active {
+    color: var(--rust);
+    border-bottom-color: var(--rust);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+    padding: 24px 36px;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 20px;
+    border-radius: 4px;
+  }
+
+  .stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--rust);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .client-panel {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--paper);
+  }
+
+  .client-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .client-name {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .client-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .doc-item {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: var(--paper);
+  }
+
+  .doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .doc-name {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .status-select {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 150px;
+    font-weight: 600;
+  }
+
+  .notes-section {
+    background: var(--paper-dim);
+    padding: 8px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+
+  .notes-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  .notes-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    min-height: 60px;
+    resize: vertical;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .action-buttons button {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .btn-delete {
+    background: #fce4e4;
+    color: #922b21;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--ink-soft);
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  .alert.success {
+    background: #d1f2e2;
+    color: #155c2b;
+  }
+
+  .alert.error {
+    background: #fce4e4;
+    color: #922b21;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .status-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .status-sendback {
+    background: #fce4e4;
+    color: #922b21;
+  }
+
+  .status-reviewed {
+    background: #cfe2ff;
+    color: #084298;
+  }
+
+  .status-completed {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .inputter-info {
+    background: #e3f0ff;
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #003d8b;
+    margin-top: 4px;
+  }
+
+  .doc-summary {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .doc-count {
+    font-weight: 600;
+  }
+
+  .sync-indicator {
+    font-size: 11px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    display: inline-block;
+  }
+
+  .sync-dot.ok { background: #2f9e5f; }
+  .sync-dot.err { background: #c0392b; }
+  .sync-dot.busy { background: #d9a520; animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<header style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+  <div>
+    <h1>📋 TaxAce Tax Reviewer Dashboard</h1>
+    <div style="font-size: 13px; color: var(--ink-soft);">Review and manage documents inputted from clients — shared live with the Inputter dashboard</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <a href="./index.html" class="hub-back-btn">← Hub</a>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search client or document...">
+  <select id="statusFilter" class="search-box" style="flex: 0 1 180px;" onchange="renderAssignedClients()">
+    <option value="">All Status</option>
+    <option value="Pending">⏳ Pending</option>
+    <option value="Send Back">↩️ Send Back</option>
+    <option value="Reviewed">✓ Reviewed</option>
+    <option value="Completed">✅ Completed</option>
+  </select>
+  <button class="btn secondary" onclick="refreshDashboard()">🔄 Refresh</button>
+  <button class="btn primary" onclick="syncToWorksheet()">📤 Sync</button>
+  <span id="syncIndicator" class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatusText">Not synced yet</span></span>
+  <span id="currentUser" style="margin-left: 12px; font-weight: 600; font-size: 14px;"></span>
+  <button class="btn secondary" onclick="logout()">Logout</button>
+</div>
+
+<div class="tabs">
+  <button class="tab-button active" onclick="switchTab('assigned')">👤 Assigned to Me</button>
+  <button class="tab-button" onclick="switchTab('summary')">📊 Summary</button>
+  <button class="tab-button" onclick="switchTab('canopy')">🔄 Canopy Sync</button>
+  <button class="tab-button" onclick="switchTab('taxterms')">📖 Tax Term Reference</button>
+</div>
+
+<!-- ASSIGNED TAB -->
+<div id="assignedTab" class="tab-content active">
+  <div class="container">
+    <div id="alertBox"></div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="statAssigned">0</div>
+        <div class="stat-label">Assigned to You</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statInProgress">0</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statCompleted">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+
+    <div id="clientsList"></div>
+  </div>
+</div>
+
+<!-- SUMMARY TAB -->
+<div id="summaryTab" class="tab-content">
+  <div class="container">
+    <p style="color: var(--ink-soft); margin-bottom: 20px;">Overview of all your assigned clients and their document status.</p>
+    <div id="summaryContent"></div>
+  </div>
+</div>
+
+<!-- CANOPY SYNC TAB -->
+<div id="canopyTab" class="tab-content">
+  <div class="container">
+    <div id="canopyAlertBox"></div>
+    <div style="margin-bottom: 20px;">
+      <p style="color: var(--ink-soft);">Sync Canopy data with reviewer feedback</p>
+      <button class="btn primary" onclick="importCanopyData()">📥 Import Canopy CSV</button>
+      <button class="btn secondary" onclick="matchCanopyWithReviews()">🔗 Match & Sync</button>
+    </div>
+    <div id="canopyContent"></div>
+  </div>
+</div>
+
+<!-- TAX TERM REFERENCE TAB -->
+<div id="taxtermsTab" class="tab-content">
+  <div class="container">
+    <div id="taxTermAlertBox"></div>
+    <p style="color: var(--ink-soft); margin-bottom: 16px;">A shared glossary of tax terms, abbreviations, and situational notes used across client work — organized by category, with optional reference photos and guide links.</p>
+
+    <div class="glossary-toolbar">
+      <input type="text" id="glossarySearch" class="search-box" placeholder="🔍 Search a term (e.g. 1099-NEC, Solo 401k, alimony)..." style="flex: 1; min-width: 240px;">
+      <select id="glossaryCategoryFilter" class="search-box" style="flex: 0 1 220px;">
+        <option value="">All Categories</option>
+        <option value="Income & 1099 Documents">Income &amp; 1099 Documents</option>
+        <option value="Health Coverage & Insurance">Health Coverage &amp; Insurance</option>
+        <option value="Education">Education</option>
+        <option value="Retirement & Investments">Retirement &amp; Investments</option>
+        <option value="Business & Self-Employment">Business &amp; Self-Employment</option>
+        <option value="Trusts & Estates">Trusts &amp; Estates</option>
+        <option value="Dependents & Family">Dependents &amp; Family</option>
+        <option value="Deductions & Credits">Deductions &amp; Credits</option>
+        <option value="Filing Status & Residency">Filing Status &amp; Residency</option>
+        <option value="Other">Other</option>
+      </select>
+      <button class="btn primary" onclick="toggleAddTermForm()">➕ Add Term</button>
+    </div>
+
+    <div class="add-term-form" id="addTermForm">
+      <label>Term</label>
+      <input type="text" id="newTermName" placeholder="e.g. Backdoor Roth IRA">
+
+      <label>Details (one point per line)</label>
+      <textarea id="newTermDetails" placeholder="One bullet point per line..."></textarea>
+
+      <label>Category</label>
+      <select id="newTermCategory">
+        <option value="Income & 1099 Documents">Income &amp; 1099 Documents</option>
+        <option value="Health Coverage & Insurance">Health Coverage &amp; Insurance</option>
+        <option value="Education">Education</option>
+        <option value="Retirement & Investments">Retirement &amp; Investments</option>
+        <option value="Business & Self-Employment">Business &amp; Self-Employment</option>
+        <option value="Trusts & Estates">Trusts &amp; Estates</option>
+        <option value="Dependents & Family">Dependents &amp; Family</option>
+        <option value="Deductions & Credits">Deductions &amp; Credits</option>
+        <option value="Filing Status & Residency">Filing Status &amp; Residency</option>
+        <option value="Other" selected>Other</option>
+      </select>
+
+      <label>Photo (optional — what it looks like)</label>
+      <input type="file" id="newTermPhoto" accept="image/*">
+      <img id="photoPreview" class="photo-preview">
+
+      <label>Video / Guide Link (optional — Scribe, Loom, YouTube, etc.)</label>
+      <input type="text" id="newTermGuideLink" placeholder="https://scribehow.com/shared/...">
+
+      <div class="add-term-actions">
+        <button class="btn primary" onclick="saveNewTerm()">Save Term</button>
+        <button class="btn secondary" onclick="cancelAddTerm()">Cancel</button>
+      </div>
+    </div>
+
+    <input type="file" id="termPhotoInput" accept="image/*" style="display:none;">
+    <div class="glossary-grid" id="glossaryGrid"></div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<script>
+// Paste your Apps Script web app URL here (see Code.gs deployment notes).
+// Must be the SAME URL as the Inputter dashboard — they share one backend.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMQxwguHvyx8h1P-4hcIQJW8vpAeYtSNt9agaqyAg9oZldfhAmUiUFdsQ5jhgqVaVj3Q/exec';
+
+const reviewerStatusOptions = [
+  { value: 'Pending', label: '⏳ Pending', class: 'pending' },
+  { value: 'Send Back', label: '↩️ Send Back', class: 'sendback' },
+  { value: 'Reviewed', label: '✓ Reviewed', class: 'reviewed' },
+  { value: 'Completed', label: '✅ Completed', class: 'completed' }
+];
+
+let allClients = [];
+let currentReviewer = null;
+let reviewerNotes = {};
+
+// ============================================================
+// INIT & LOGIN
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  applyThemeLabel(localStorage.getItem('taxace-hub-theme') || 'light');
+  initTaxTermsTab();
+
+  const savedReviewer = localStorage.getItem('current_reviewer');
+  const savedNotes = localStorage.getItem('reviewer_notes');
+
+  if (savedNotes) {
+    try { reviewerNotes = JSON.parse(savedNotes); } catch (e) { reviewerNotes = {}; }
+  }
+
+  if (savedReviewer) {
+    currentReviewer = savedReviewer;
+    document.getElementById('currentUser').textContent = `👤 ${currentReviewer}`;
+    loadClientsData();
+    setInterval(() => loadFromServer(true), 60000);
+  } else {
+    showLoginPrompt();
+  }
+});
+
+// ============================================================
+// TAX TERM REFERENCE (GLOSSARY) — matches TaxAce Reviewers Dashboard build
+// ============================================================
+let GLOSSARY_TERMS = [{"term": "Schedule E - Rental Income & Expense", "category": "Income & 1099 Documents", "details": ["Reports rental real estate, royalties, partnerships, S-corps, estates, and trusts", "Common deductible expenses: mortgage interest, property tax, insurance, repairs, management fees, utilities", "Depreciation: residential rental property depreciated over 27.5 years", "Special $25,000 loss allowance for active participation, phases out between $100k-$150k MAGI", "Rental losses generally limited by passive activity rules unless taxpayer qualifies as a real estate professional", "Keep records of days rented vs. personal use if the property is also used personally"]}, {"term": "Code DD", "details": ["Cost of employer-sponsored health coverage", "Not taxable", "total cost of your health insurance for the year", "what you paid + what your employer paid", "Not taxable", "For information only (required by the Affordable Care Act)"], "category": "Health Coverage & Insurance"}, {"term": "1095-B", "details": ["\u2192 From insurers or small employers (fully insured plans)", "Report coverage on the CA return"], "category": "Health Coverage & Insurance"}, {"term": "1095-C", "details": ["\u2192 From large employers (ALEs, 50+ employees)", "Report coverage on the CA return"], "category": "Health Coverage & Insurance"}, {"term": "$300 per educator", "details": ["($600 married filing jointly if both spouses qualify)"], "category": "Education"}, {"term": "1098E (Student Loan)", "details": ["only deductible by the person who is legally obligated on the loan", "parents cannot take the student loan interest deduction, if name in form is the dependent"], "category": "Education"}, {"term": "State filing", "details": ["client is required to file a state return", "Client\u2019s residency", "Source of income"], "category": "Filing Status & Residency"}, {"term": "DPO", "details": ["Designated Payee / Designated Paid Organizer address", "address of the person or firm that is allowed to receive certain IRS or state refund-related mail"], "category": "Filing Status & Residency"}, {"term": "Form 5498", "details": ["informational only", "Verifying IRA/HSA contributions", "Reconciling excess contributions", "Tracking basis (Form 8606)", "Confirming HSA funding"], "category": "Retirement & Investments"}, {"term": "Solo 401(k)", "details": ["Plan provider (Fidelity, Vanguard, Schwab, Guideline, etc.)", "Ask for separate amounts: Amount contributed as employee and employer", "Schedule C: Final net profit", "Pension and Profit-Sharing Plans", "Employee: up to $23,000 (2024; $30,500 if 50+)", "Employer: ~20% of adjusted net SE income", "S-Corp: Employer contribution amount and shown on W-2 (Box 12, code D or AA)"], "category": "Retirement & Investments"}, {"term": "1099NEC", "details": ["input the 1099-NEC, even if the recipient name is the individual\u2019s business name"], "category": "Income & 1099 Documents"}, {"term": "Business vehicles", "details": ["reported on Form 4797, depreciation"], "category": "Business & Self-Employment"}, {"term": "Scorp receive a 1099K", "details": ["Form 1120-S as part of gross receipt"], "category": "Business & Self-Employment"}, {"term": "Internship income", "details": ["Report on Schedule C (individual return)", "Deduct any related expenses (mileage, supplies, etc.)", "No extra documents required beyond the 109", "Activity: Internship / Contract Services"], "category": "Income & 1099 Documents"}, {"term": "Alimony (Received)", "details": ["Divorce finalized BEFORE 1/1/2019", "Alimony is taxable income", "Federal \u2192 Income \u2192 Other Income \u2192 Alimony received", "finalized ON or AFTER 1/1/2019", "Alimony is NOT taxable"], "category": "Dependents & Family"}, {"term": "Alimony (Paid)", "details": ["Divorce finalized BEFORE 1/1/2019", "Alimony is deductible", "Federal \u2192 Adjustments to Income \u2192 Alimony paid and Recepient SSN", "finalized ON or AFTER 1/1/2019", "Not deductible \u2014 do not enter"], "category": "Dependents & Family"}, {"term": "Adoption", "details": ["entered for the Adoption Credit (Form 8839)", "Federal \u2192 Credits \u2192 Adoption Credit (Form 8839)", "Adoption agency fees", "Attorney fees", "Court costs", "Travel (meals & lodging while away from home)", "Other directly related adoption expenses"], "category": "Dependents & Family"}, {"term": "Spouse died", "details": ["considered married for the entire tax year"], "category": "Filing Status & Residency"}, {"term": "Real Estate Tax", "details": ["also called Property Tax", "primary residence", "rental property"], "category": "Deductions & Credits"}, {"term": "Personal Property Tax", "details": ["assessed on movable property", "Vehicles", "Boats", "Business equipment"], "category": "Deductions & Credits"}, {"term": "1095-C", "details": ["employer-sponsored health coverage", "Applicable Large Employers (ALEs)", "health insurance coverage the employer offered", "Employee\u2019s share of premiums", "Sent to employees (even if they declined coverage)"], "category": "Health Coverage & Insurance"}, {"term": "1095-B", "details": ["Insurance companies (for fully insured plans)", "Small employers that are not ALEs", "Government programs (like Medicaid)", "Reports actual coverage enrollment"], "category": "Health Coverage & Insurance"}, {"term": "Medicare", "details": ["receive Form 1095-B from Medicare (CMS)"], "category": "Health Coverage & Insurance"}, {"term": "Live-in provider for IHSS", "details": ["In-Home Supportive Services", "excluded from federal income tax", "providing care to that individual", "excluded from(CA)  state income tax", "W2: Box 1 (Federal) and Box 16 (CA) can show $0 for IHSS wages", "total non-taxable wages are usually shown in Box 12 with Code II"], "category": "Income & 1099 Documents"}, {"term": "1099DIV for trust account", "details": ["trust\u2019s name and EIN: It belongs on the trust return (Form 1041)", "client\u2019s SSN is on the 1099-DIV: reported on the client\u2019s 1040"], "category": "Trusts & Estates"}, {"term": "Code II in Box 12-W2", "details": ["income may be excludable from federal taxable income", "Social Security & Medicare wages reported"], "category": "Income & 1099 Documents"}, {"term": "AOTC Eligibility", "details": ["American Opportunity Tax Credit (AOTC)", "Up to $2,500 per eligible student", "100% of the first $2,000 of qualified education expenses", "25% of the next $2,000", "Up to $1,000 refundable (even if no tax is owed)"], "category": "Education"}, {"term": "1098T", "details": ["Box 1: Payments received for qualified tuition and related expenses", "Box 5: Scholarships or grants", "credit phases out if Modified Adjusted Gross Income (MAGI):", "Single: $80,000\u2013$90,000", "Married Filing Jointly: $160,000\u2013$180,000"], "category": "Education"}, {"term": "LLC Type", "details": ["Single Member: LLC", "Multi-Member: 1065", "LLC taxed as S-Corp: 1120S", "LLC taxed as C-Corp: 1120"], "category": "Business & Self-Employment"}, {"term": "Car Donation", "details": ["1098-C (required for vehicle donations over $500)", "Enter Charitable Contributions (Schedule A)"], "category": "Deductions & Credits"}, {"term": "Asset Entry", "details": ["Asset Entry Worksheet", "if more than 2,500 amount", "under $2,500, you can use the De Minimis Safe Harbor and expense it in the current year"], "category": "Business & Self-Employment"}, {"term": "HOH Status", "details": ["Dependent must lived with the taxpayer more than half the year", "qualifying child or qualifying relative", "Education expenses (like tuition) if student is the taxpayer"], "category": "Dependents & Family"}, {"term": "1099INT is under Trust", "details": ["1099-INT shows the taxpayer\u2019s SSN", "Enter the 1099-INT on the individual return (Form 1040)"], "category": "Trusts & Estates"}, {"term": "CRUT", "details": ["Charitable Remainder Unitrust", "trust that pays them income", "managed by U.S. Bank.", "trust issues a Schedule K-1"], "category": "Trusts & Estates"}, {"term": "Wordwide income", "details": ["rental income must be reported", "need to claim a Foreign Tax Credit (Form 1116)", "This prevents double taxation"], "category": "Filing Status & Residency"}, {"term": "MSRRA", "details": ["protect Employee wages"], "category": "Filing Status & Residency"}, {"term": "Medical & Dental Copays", "details": ["copays are deductible medical expenses", "doctor visits, prescriptions, and dental appointments", "only the portion of total medical expenses that exceeds 7.5% AGI", "example her AGI is $80,000", "7.5% = $6,000", "Only medical expenses above $6,000 would be deductible", "Medical expenses are deductible only if the client itemizes deductions", "only the amount over 7.5% of Adjusted Gross Income (AGI) counts", "qualified medical expenses (Schedule A)", "Doctor/medical visits (\u201cMedical\u201d)", "Dental expenses", "Prescription medications (e.g., Kaiser pharmacy)", "Payments to healthcare providers (like Kaiser)", "HSA-eligible items (if not reimbursed)"], "category": "Deductions & Credits"}, {"term": "Property switch", "details": ["Prorated income/expenses"], "category": "Deductions & Credits"}, {"term": "AOC", "details": ["American Opportunity Credit", "Up to $2,500 per eligible student", "First 4 years of undergraduate education", "40% refundable (up to $1,000)"], "category": "Education"}, {"term": "LLC", "details": ["Lifetime Learning Credit", "Up to $2,000 per return", "Unlimited years and non-refundable"], "category": "Education"}, {"term": "1099Q", "details": ["529 plan (Qualified Tuition Program)", "Coverdell ESA", "Qualified expenses for 529 plans include", "Tuition", "Books", "Equipment"], "category": "Education"}, {"term": "Contract labor", "details": ["1099-NEC is not required unless payments were $600 or more"], "category": "Income & 1099 Documents"}, {"term": "SCRA", "details": ["Servicemembers Civil Relief Act", "Active-duty military members do not become California residents", "maintains Texas residency, he is not subject to California income tax", "oes not need to file a California resident return"], "category": "Filing Status & Residency"}, {"term": "CAUTMA", "details": ["California Uniform Transfers to Minors Act account", "the minor (child) is the taxpayer", "the parent can elect to report the child\u2019s investment income", "Child is under age 19 (or under 24 and full-time student)", "Only interest/dividends (no capital gains from selling investments)", "Total investment income below the IRS threshold (around $11k+ range depending on year)"], "category": "Dependents & Family"}, {"term": "W-2G", "details": ["obtain it directly from the gambling operator", "win/loss statement is typically used only as supporting documentation for gambling losses", "does not replace the W-2G for reporting gambling winnings", "$1,200+ from slots or bingo", "$1,500+ from keno", "$5,000+ from poker tournaments", "$600+ for other wagers if payout is 300\u00d7 the wager"], "category": "Other"}, {"term": "UBIA", "details": ["Unadjusted Basis Immediately After Acquisition", "Tangible business property (equipment, buildings, machinery, etc.)", "Used in a trade or business", "Depreciable", "used to determine limits on the QBI deduction when income is above"], "category": "Business & Self-Employment"}, {"term": "Donations", "details": ["Deductible up to 60% of your Adjusted Gross Income (AGI)", "Example- AGI: $100,000", "Max deductible donation: $60,000", "Excess donations can also be carried forward for 5 years", "donation \u2265 $250 \u2192 written acknowledgment required", "property donation > $500 \u2192 file Form 8283", "property > $5,000 \u2192 qualified appraisal required"], "category": "Deductions & Credits"}, {"term": "Annual Gift", "details": ["United States Gift (and Generation-Skipping Transfer) Tax Return", "Annual gift exclusion \u2248 $18,000 per recipient", "file IRS Form 709", "reduces her lifetime estate and gift exemption (currently about $13M+)"], "category": "Deductions & Credits"}, {"term": "Donation without receipts", "details": ["$250 or More (Per Donation) -Need ritten acknowledgment from Goodwill", "under $500 total, he does not need a formal receipt \u2014 but he must have records", "over $5,000, a qualified appraisal is required"], "category": "Deductions & Credits"}, {"term": "FSA contributions", "details": ["reduce Box 1 wages on the W-2", "shown in Box 14 or Box 12 (code W for HSA only)", "Medical expenses reimbursed by FSA cannot be deducted on Schedule A", "unreimbursed expenses exceeding 7.5% of AGI can be deductible"], "category": "Health Coverage & Insurance"}, {"term": "FSA vs HSA", "details": ["Flexible Spending Account (FSA)", "Funded through payroll deductions", "Contributions are already pre-tax on the W-2", "No separate tax forms are issued for filing", "reflected in Box 14 or payroll deductions on their W-2", "HSA (Health Savings Account)", "paired with a High Deductible Health Plan (HDHP)", "reported on Form 5498-SA and Form 1099-SA"], "category": "Health Coverage & Insurance"}, {"term": "C-Corp vs S-Corp", "details": ["S-Corp (S corporation) is not a business entity type", "a tax election a corporation (or LLC) can file with the Internal Revenue Service using Form 2553", "C Corporation \u2192 default if no tax election was mad", "S Corporation \u2192 if the company filed an S-Corp election with the IRS"], "category": "Business & Self-Employment"}, {"term": "Medicare vs. Public Exchange", "details": ["public exchange refers to the Health Insurance Marketplace created under the Affordable Care Act", "Plans purchased there generate Form 1095-A", "form reports premium tax credits for ACA marketplace plans", "enrolled in Medicare generally cannot receive ACA premium tax credits", "Form 1095-B \u2013 shows minimum essential coverage", "Form 1095-C \u2013 only if an employer plan is involved"], "category": "Health Coverage & Insurance"}, {"term": "Child support", "details": ["Child support received \u2192 Not taxable income", "Child support paid \u2192 Not deductible", "enter dependents, custody, or childcare expenses related to the child", "affects:", "Child Tax Credit", "Earned Income Credit", "Filing status (Head of Household)"], "category": "Dependents & Family"}, {"term": "Property damage", "details": ["only deductible if it is due to a federally declared disaster", "Examples that may qualify:", "Hurricane", "Flood", "Wildfire", "Earthquake", "Other disasters declared by the federal government", "However, if the property is:", "Rental property", "Business property", "Then the loss can still be deductible regardless of disaster status."], "category": "Deductions & Credits"}, {"term": "childcare expense", "details": ["amounts you paid to your daughter\u2019s school for after-school care services", "made for supervision and care while parents were working", "not for for regular school tuition", "not for primarily academic tutoring", "not for extracurricular lessons (music, sports, etc.)"], "category": "Dependents & Family"}, {"term": "Sport camps", "details": ["qualify for the Child and Dependent Care Credit", "only if the child is under age 13 at the time of care", "It\u2019s a day camp (not overnight)"], "category": "Dependents & Family"}, {"term": "1099-B", "details": ["generated if there were reportable sales or redemptions of securities", "No sales of stocks, ETFs, mutual funds, or bond", "No option transactions that closed", "All activity was inside a retirement account (IRA, 401(k), etc.)"], "category": "Income & 1099 Documents"}, {"term": "Ceritification related to job", "details": ["qualifies as deductible work-related education"], "category": "Education"}, {"term": "IRS estimated tax", "details": ["1040ES (for 1040, 1040A, 1040EZ)"], "category": "Filing Status & Residency"}, {"term": "MA Rent Deduction", "details": ["renters may deduct 50% of the rent paid", "up to a maximum deduction of $4,000 per return", "Not be claiming rent for a property they own"], "category": "Deductions & Credits"}, {"term": "Head of Household (HOH)", "details": ["dependent (his mother) qualifies (lived with him, support test, etc.)", "Qualifying Relative (not a child)", "parent is physically or mentally incapable of self-care"], "category": "Dependents & Family"}, {"term": "GST non-exempt trust return", "details": ["Not a fully exempt trust (no automatic exemption allocation)", "Trust type (revocable, irrevocable, dynasty, etc.)", "Date of creation (important for GST grandfathering rules)", "Transfers to skip persons (e.g., grandchildren)", "Distributions from trust to skip persons", "When a non-skip interest ends and only skip persons remain"], "category": "Trusts & Estates"}, {"term": "GI Bill (Chapter 33)", "details": ["Tuition and fees", "Housing allowance", "Books and supplies", "GI Bill benefits = tax-free"], "category": "Education"}, {"term": "MED & DEN", "details": ["(Medical & Dental)", "W-2 Box 14", "Other (not classified)", "reflects after-tax or pre-tax payroll deductions for health coverage"], "category": "Health Coverage & Insurance"}, {"term": "W-2G", "details": ["W-2G reporting thresholds include:", "$1,200+ from slots or bingo", "$1,500+ from keno", "$5,000+ from poker tournaments", "$600+ for other wagers if payout is 300\u00d7 the wager", "Casinos issue a W-2G only when a single qualifying win occurs"], "category": "Other"}, {"term": "1099-Rs for Pension", "details": ["DFAS or RAS", "mark the amount estimated"], "category": "Retirement & Investments"}];
+let glossarySearchTerm = '';
+let pendingPhotoDataUrl = '';
+
+const DEFAULT_GLOSSARY_TERMS = GLOSSARY_TERMS.slice(); // pristine categorized defaults, kept for migrating old saved data
+
+async function loadGlossaryState(){
+  try{
+    const raw = localStorage.getItem('taxace-dashboard-glossary');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length){
+        const defaultsByName = {};
+        DEFAULT_GLOSSARY_TERMS.forEach(function(d){ defaultsByName[d.term] = d.category; });
+        let migrated = false;
+        parsed.forEach(function(t){
+          if(!t.category){
+            t.category = defaultsByName[t.term] || 'Other';
+            migrated = true;
+          }
+        });
+        GLOSSARY_TERMS = parsed;
+        if(migrated) saveGlossaryState();
+      }
+    }
+  }catch(e){ console.error('Could not load saved glossary', e); }
+}
+async function saveGlossaryState(){
+  const payload = JSON.stringify(GLOSSARY_TERMS);
+  try{
+    localStorage.setItem('taxace-dashboard-glossary', payload);
+    const verify = localStorage.getItem('taxace-dashboard-glossary');
+    if(verify !== payload){
+      throw new Error('Saved data did not verify on read-back — your browser may be blocking storage.');
+    }
+    showAlert('✓ Saved', 'success', 'taxTermAlertBox');
+  }catch(e){
+    console.error('Could not save glossary', e);
+    showAlert('⚠ Not actually saved — ' + (e.message.includes('quota') ? 'storage is full' : 'check if private/incognito mode is blocking storage'), 'error', 'taxTermAlertBox');
+  }
+}
+
+const CATEGORY_ORDER = [
+  'Income & 1099 Documents','Health Coverage & Insurance','Education','Retirement & Investments',
+  'Business & Self-Employment','Trusts & Estates','Dependents & Family','Deductions & Credits',
+  'Filing Status & Residency','Other'
+];
+let glossaryCategoryFilter = '';
+let expandedCategories = new Set(); // which categories are manually expanded (persists across renders)
+
+function toggleCategory(cat){
+  if(expandedCategories.has(cat)) expandedCategories.delete(cat);
+  else expandedCategories.add(cat);
+  renderTaxTerms();
+}
+
+function renderTaxTerms(){
+  const grid = document.getElementById('glossaryGrid');
+  if (!grid) return; // tab not yet in DOM on first paint of other pages
+
+  const filter = (document.getElementById('glossarySearch')?.value || '');
+  const f = filter.trim().toLowerCase();
+  const catFilter = glossaryCategoryFilter;
+  const isFiltering = !!f || !!catFilter;
+
+  const terms = GLOSSARY_TERMS.filter(function(g){
+    const matchesCategory = !catFilter || (g.category || 'Other') === catFilter;
+    if(!matchesCategory) return false;
+    if(!f) return true;
+    const hay = (g.term + ' ' + g.details.join(' ')).toLowerCase();
+    return hay.includes(f);
+  });
+
+  if(!terms.length){
+    grid.innerHTML = '<div class="empty-state" style="text-align:center; padding: 40px; color: var(--ink-soft);">No glossary terms match "' + escapeHtmlG(filter) + '".</div>';
+    return;
+  }
+
+  const groups = {};
+  terms.forEach(function(g){
+    const cat = g.category || 'Other';
+    if(!groups[cat]) groups[cat] = [];
+    groups[cat].push(g);
+  });
+  const orderedCats = CATEGORY_ORDER.filter(function(c){ return groups[c]; })
+    .concat(Object.keys(groups).filter(function(c){ return CATEGORY_ORDER.indexOf(c) === -1; }));
+
+  grid.innerHTML = orderedCats.map(function(cat){
+    const isOpen = isFiltering || expandedCategories.has(cat);
+    const cards = groups[cat].map(function(g){
+      const idx = GLOSSARY_TERMS.indexOf(g);
+      const photoHtml = g.photo ? ('<img src="' + g.photo + '" alt="' + escapeHtmlG(g.term) + '">') : '';
+      const photoActions = g.photo
+        ? '<button class="photo-btn" data-idx="' + idx + '">🔄 Change Photo</button><button class="photo-remove-btn" data-idx="' + idx + '">✕ Remove</button>'
+        : '<button class="photo-btn" data-idx="' + idx + '">📷 Add Photo</button>';
+      const guideActions = g.guideLink
+        ? '<a href="' + escapeHtmlG(g.guideLink) + '" target="_blank" rel="noopener" class="guide-link-btn">🎥 Watch Guide</a><button class="guide-edit-btn" data-idx="' + idx + '">✎ Edit</button><button class="guide-remove-btn" data-idx="' + idx + '">✕ Remove</button>'
+        : '<button class="guide-add-btn" data-idx="' + idx + '">🔗 Add Video/Guide Link</button>';
+      return '<div class="term-card"><h3>' + escapeHtmlG(g.term) + '</h3><ul>' +
+        g.details.map(function(d){ return '<li>' + escapeHtmlG(d) + '</li>'; }).join('') +
+        '</ul>' + photoHtml + '<div class="term-photo-actions">' + photoActions + '</div>' +
+        '<div class="term-guide-actions">' + guideActions + '</div></div>';
+    }).join('');
+    return '<div class="glossary-category">' +
+      '<div class="glossary-category-title" onclick="toggleCategory(\'' + cat.replace(/'/g, "\\'") + '\')">' +
+        '<span class="category-toggle-icon' + (isOpen ? '' : ' collapsed') + '">▼</span>' +
+        escapeHtmlG(cat) + ' <span class="glossary-category-count">' + groups[cat].length + '</span>' +
+      '</div>' +
+      '<div class="glossary-grid-inner' + (isOpen ? '' : ' collapsed') + '">' + cards + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function escapeHtmlG(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
+}
+
+// ---- Photo attach/change/remove & guide link management for saved terms ----
+let currentPhotoTargetIdx = null;
+
+function initGlossaryGridListener(){
+  const grid = document.getElementById('glossaryGrid');
+  if (!grid || grid.dataset.listenerAttached) return;
+  grid.dataset.listenerAttached = 'true';
+  grid.addEventListener('click', function(e){
+    const addBtn = e.target.closest('.photo-btn');
+    const removeBtn = e.target.closest('.photo-remove-btn');
+    const photoImg = e.target.closest('.term-card img');
+    const guideAddBtn = e.target.closest('.guide-add-btn');
+    const guideEditBtn = e.target.closest('.guide-edit-btn');
+    const guideRemoveBtn = e.target.closest('.guide-remove-btn');
+    if(addBtn){
+      currentPhotoTargetIdx = parseInt(addBtn.dataset.idx, 10);
+      document.getElementById('termPhotoInput').click();
+    } else if(removeBtn){
+      const idx = parseInt(removeBtn.dataset.idx, 10);
+      delete GLOSSARY_TERMS[idx].photo;
+      saveGlossaryState();
+      renderTaxTerms();
+    } else if(photoImg){
+      openLightbox(photoImg.src, photoImg.alt);
+    } else if(guideAddBtn || guideEditBtn){
+      const idx = parseInt((guideAddBtn || guideEditBtn).dataset.idx, 10);
+      const current = GLOSSARY_TERMS[idx].guideLink || '';
+      const url = prompt('Paste a video, Scribe, or visual guide link for "' + GLOSSARY_TERMS[idx].term + '":', current);
+      if(url === null) return;
+      const trimmed = url.trim();
+      if(trimmed){ GLOSSARY_TERMS[idx].guideLink = trimmed; }
+      else { delete GLOSSARY_TERMS[idx].guideLink; }
+      saveGlossaryState();
+      renderTaxTerms();
+    } else if(guideRemoveBtn){
+      const idx = parseInt(guideRemoveBtn.dataset.idx, 10);
+      delete GLOSSARY_TERMS[idx].guideLink;
+      saveGlossaryState();
+      renderTaxTerms();
+    }
+  });
+}
+
+function openLightbox(src, caption){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxImg').alt = caption || '';
+  document.getElementById('lightboxCaption').textContent = caption || '';
+  document.getElementById('lightboxOverlay').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightboxOverlay').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+
+function initGlossaryStaticListeners(){
+  const overlay = document.getElementById('lightboxOverlay');
+  if (overlay && !overlay.dataset.listenerAttached) {
+    overlay.dataset.listenerAttached = 'true';
+    overlay.addEventListener('click', function(e){ if(e.target === this) closeLightbox(); });
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeLightbox(); });
+  }
+
+  const photoInput = document.getElementById('termPhotoInput');
+  if (photoInput && !photoInput.dataset.listenerAttached) {
+    photoInput.dataset.listenerAttached = 'true';
+    photoInput.addEventListener('change', async function(e){
+      const file = e.target.files[0];
+      if(!file || currentPhotoTargetIdx === null) return;
+      const dataUrl = await handlePhotoUpload(file);
+      GLOSSARY_TERMS[currentPhotoTargetIdx].photo = dataUrl;
+      currentPhotoTargetIdx = null;
+      e.target.value = '';
+      await saveGlossaryState();
+      renderTaxTerms();
+    });
+  }
+
+  const newTermPhoto = document.getElementById('newTermPhoto');
+  if (newTermPhoto && !newTermPhoto.dataset.listenerAttached) {
+    newTermPhoto.dataset.listenerAttached = 'true';
+    newTermPhoto.addEventListener('change', async function(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      pendingPhotoDataUrl = await handlePhotoUpload(file);
+      const preview = document.getElementById('photoPreview');
+      preview.src = pendingPhotoDataUrl;
+      preview.style.display = 'block';
+    });
+  }
+
+  const searchInput = document.getElementById('glossarySearch');
+  if (searchInput && !searchInput.dataset.listenerAttached) {
+    searchInput.dataset.listenerAttached = 'true';
+    searchInput.addEventListener('input', function(e){
+      glossarySearchTerm = e.target.value;
+      renderTaxTerms();
+    });
+  }
+
+  const catFilterEl = document.getElementById('glossaryCategoryFilter');
+  if (catFilterEl && !catFilterEl.dataset.listenerAttached) {
+    catFilterEl.dataset.listenerAttached = 'true';
+    catFilterEl.addEventListener('change', function(e){
+      glossaryCategoryFilter = e.target.value;
+      renderTaxTerms();
+    });
+  }
+}
+
+function toggleAddTermForm(){
+  const form = document.getElementById('addTermForm');
+  const showing = form.style.display === 'block';
+  form.style.display = showing ? 'none' : 'block';
+  if(!showing) document.getElementById('newTermName').focus();
+}
+
+function cancelAddTerm(){
+  document.getElementById('addTermForm').style.display = 'none';
+  document.getElementById('newTermName').value = '';
+  document.getElementById('newTermDetails').value = '';
+  document.getElementById('newTermCategory').value = 'Other';
+  document.getElementById('newTermPhoto').value = '';
+  document.getElementById('newTermGuideLink').value = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  pendingPhotoDataUrl = '';
+}
+
+// Resize/compress the uploaded photo client-side before storing.
+function handlePhotoUpload(file){
+  return new Promise(function(resolve){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        const maxWidth = 480;
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function saveNewTerm(){
+  const name = document.getElementById('newTermName').value.trim();
+  const detailsRaw = document.getElementById('newTermDetails').value;
+  const details = detailsRaw.split(String.fromCharCode(10)).map(function(s){ return s.trim(); }).filter(Boolean);
+  const category = document.getElementById('newTermCategory').value;
+  const guideLink = document.getElementById('newTermGuideLink').value.trim();
+  if(!name){ showAlert('Give the term a name first.', 'error', 'taxTermAlertBox'); return; }
+  const newTerm = { term: name, details: details, category: category };
+  if(pendingPhotoDataUrl) newTerm.photo = pendingPhotoDataUrl;
+  if(guideLink) newTerm.guideLink = guideLink;
+  GLOSSARY_TERMS = [newTerm].concat(GLOSSARY_TERMS);
+  await saveGlossaryState();
+  cancelAddTerm();
+  glossarySearchTerm = '';
+  glossaryCategoryFilter = '';
+  document.getElementById('glossarySearch').value = '';
+  document.getElementById('glossaryCategoryFilter').value = '';
+  renderTaxTerms();
+}
+
+async function initTaxTermsTab(){
+  initGlossaryGridListener();
+  initGlossaryStaticListeners();
+  await loadGlossaryState();
+  renderTaxTerms();
+}
+
+function showLoginPrompt() {
+
+  const reviewer = prompt('Enter your name to login:\n(dani, annalyn, lyndon, jessel)');
+  if (reviewer && ['dani', 'annalyn', 'lyndon', 'jessel'].includes(reviewer.toLowerCase())) {
+    currentReviewer = reviewer.toLowerCase();
+    localStorage.setItem('current_reviewer', currentReviewer);
+    document.getElementById('currentUser').textContent = `👤 ${currentReviewer}`;
+    loadClientsData();
+    setInterval(() => loadFromServer(true), 60000);
+  } else {
+    alert('Invalid reviewer name');
+    showLoginPrompt();
+  }
+}
+
+function logout() {
+  localStorage.removeItem('current_reviewer');
+  localStorage.removeItem('reviewer_notes');
+  window.location.reload();
+}
+
+// ============================================================
+// LOAD DATA — local cache first (instant), then reconcile with
+// the shared worksheet so this always reflects what Inputters entered
+// on their own computers, not just what's in this browser.
+// ============================================================
+function loadClientsData() {
+  const savedClients = localStorage.getItem('taxace_clients');
+  if (savedClients) {
+    try {
+      allClients = JSON.parse(savedClients);
+    } catch (e) {
+      console.error('Error loading clients:', e);
+      allClients = [];
+    }
+  }
+
+  renderAssignedClients();
+  updateStats();
+  loadFromServer(true);
+}
+
+function setSyncState(state, label) {
+  const dot = document.getElementById('syncDot');
+  const status = document.getElementById('syncStatusText');
+  if (!dot || !status) return;
+  dot.className = 'sync-dot' + (state ? ' ' + state : '');
+  status.textContent = label;
+}
+
+async function loadFromServer(silent) {
+  if (!APPS_SCRIPT_URL) return;
+  setSyncState('busy', 'Loading shared data…');
+  try {
+    // GET — never preflighted, so this reliably reaches Apps Script
+    // cross-origin from a plain HTML file.
+    const res = await fetch(APPS_SCRIPT_URL + '?action=get-all-clients', { method: 'GET' });
+    const result = await res.json();
+    if (result && result.success) {
+      allClients = result.clients || [];
+      localStorage.setItem('taxace_clients', JSON.stringify(allClients));
+      renderAssignedClients();
+      updateStats();
+      setSyncState('ok', 'Synced ' + new Date().toLocaleTimeString());
+      if (!silent) showAlert(`✓ Loaded latest shared data (${allClients.length} clients)`, 'success');
+    } else {
+      setSyncState('err', 'Server error on load');
+      if (!silent) showAlert('⚠️ Could not load shared data: ' + (result && result.error), 'error');
+    }
+  } catch (e) {
+    setSyncState('err', 'Offline — showing cached data');
+    console.error('loadFromServer failed:', e);
+    if (!silent) showAlert('⚠️ Could not reach the worksheet. Showing your last cached data.', 'error');
+  }
+}
+
+// ============================================================
+// RENDER ASSIGNED CLIENTS
+// ============================================================
+function renderAssignedClients() {
+  const search = document.getElementById('searchBox').value.toLowerCase();
+  const statusFilter = document.getElementById('statusFilter').value;
+  const assigned = allClients.filter(c => c.reviewer === currentReviewer);
+
+  const filtered = assigned.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(search) ||
+      c.documents.some(d => d.docName.toLowerCase().includes(search));
+
+    const matchesStatus = !statusFilter || c.documents.some(d => (d.reviewerStatus || 'Pending') === statusFilter);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  if (filtered.length === 0) {
+    document.getElementById('clientsList').innerHTML = `
+      <div class="empty-state">
+        <div>📋</div>
+        <div>No matching clients.</div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach((client, idx) => {
+    const clientId = `client_${client.id}`;
+    const isExpanded = localStorage.getItem(clientId) !== 'false';
+
+    const pending = client.documents.filter(d => (d.reviewerStatus || 'Pending') === 'Pending').length;
+    const sendBack = client.documents.filter(d => (d.reviewerStatus || 'Pending') === 'Send Back').length;
+    const reviewed = client.documents.filter(d => (d.reviewerStatus || 'Pending') === 'Reviewed').length;
+    const completed = client.documents.filter(d => (d.reviewerStatus || 'Pending') === 'Completed').length;
+    const total = client.documents.length;
+
+    html += `
+      <div class="client-panel">
+        <div class="client-header" style="cursor: pointer;" onclick="toggleClientExpand('${clientId}')">
+          <div style="flex: 1;">
+            <div class="client-name">${isExpanded ? '▼' : '▶'} ${client.name}</div>
+            <div class="client-meta">Year: ${client.taxYear} | Inputter: ${client.inputter} | ${total} docs</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; font-weight: 600;">
+            <span style="background: #fff3cd; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">⏳${pending}</span>
+            <span style="background: #fce4e4; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">↩️${sendBack}</span>
+            <span style="background: #cfe2ff; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✓${reviewed}</span>
+            <span style="background: #d1e7dd; padding: 4px 8px; border-radius: 3px; margin: 0 4px;">✅${completed}</span>
+          </div>
+        </div>
+
+        ${isExpanded ? `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);">
+            ${renderDocuments(client)}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+
+  document.getElementById('clientsList').innerHTML = html;
+}
+
+function toggleClientExpand(clientId) {
+  const isExpanded = localStorage.getItem(clientId) !== 'false';
+  localStorage.setItem(clientId, isExpanded ? 'false' : 'true');
+  renderAssignedClients();
+}
+
+function renderDocuments(client) {
+  let html = '';
+  let currentCategory = '';
+
+  client.documents.forEach(doc => {
+    if (doc.category !== currentCategory) {
+      html += `<div style="font-weight: 600; font-size: 12px; margin-top: 12px; margin-bottom: 8px; color: var(--rust);">${doc.category}</div>`;
+      currentCategory = doc.category;
+    }
+
+    const status = doc.reviewerStatus || 'Pending';
+    const docNoteKey = `${client.id}_${doc.docId}`;
+    // Prefer the note already synced from the server (doc.reviewerNotes);
+    // fall back to whatever's cached locally under the same key.
+    const docNote = doc.reviewerNotes || reviewerNotes[docNoteKey] || '';
+
+    html += `
+      <div class="doc-item">
+        <div class="doc-header">
+          <div>
+            <div class="doc-name">${doc.docName}</div>
+            <div style="font-size: 11px; color: var(--ink-soft); margin-top: 2px;">Inputter Status: <span class="status-badge" style="background: #e8f4f8; color: #003d8b;">${doc.status || 'Not Inputted'}</span></div>
+          </div>
+          <select class="status-select" id="status_${client.id}_${doc.docId}" onchange="saveReviewerStatus('${client.id}', '${doc.docId}')">
+            ${reviewerStatusOptions.map(opt => `<option value="${opt.value}" ${status === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="notes-section">
+          <div class="notes-label">💬 Reviewer Comments:</div>
+          <textarea class="notes-textarea" id="note_${client.id}_${doc.docId}" placeholder="Add your review notes..." onchange="saveReviewerNote('${client.id}', '${doc.docId}')">${docNote}</textarea>
+          <div class="action-buttons">
+            <button class="btn-delete" onclick="deleteDocument('${client.id}', '${doc.docId}')">🗑️ Remove</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+// ============================================================
+// STATUS & NOTES MANAGEMENT
+// ============================================================
+function saveReviewerStatus(clientId, docId) {
+  const status = document.getElementById(`status_${clientId}_${docId}`).value;
+  const client = allClients.find(c => c.id === clientId);
+  if (client) {
+    const doc = client.documents.find(d => d.docId === docId);
+    if (doc) {
+      doc.reviewerStatus = status;
+      doc.reviewerCommentDate = new Date().toISOString().split('T')[0];
+      saveData();
+      renderAssignedClients();
+      updateStats();
+      showAlert('✓ Status updated — syncing…', 'success');
+      pushReviewerRecord(client, doc);
+    }
+  }
+}
+
+function saveReviewerNote(clientId, docId) {
+  const note = document.getElementById(`note_${clientId}_${docId}`).value;
+  const docNoteKey = `${clientId}_${docId}`;
+  reviewerNotes[docNoteKey] = note;
+  localStorage.setItem('reviewer_notes', JSON.stringify(reviewerNotes));
+
+  const client = allClients.find(c => c.id === clientId);
+  if (client) {
+    const doc = client.documents.find(d => d.docId === docId);
+    if (doc) {
+      doc.reviewerNotes = note;
+      saveData();
+      showAlert('✓ Note saved — syncing…', 'success');
+      pushReviewerRecord(client, doc);
+      return;
+    }
+  }
+  showAlert('✓ Note saved', 'success');
+}
+
+function deleteDocument(clientId, docId) {
+  if (!confirm('Remove this document?')) return;
+
+  const client = allClients.find(c => c.id === clientId);
+  if (client) {
+    client.documents = client.documents.filter(d => d.docId !== docId);
+    saveData();
+    renderAssignedClients();
+    updateStats();
+    showAlert('✓ Document removed locally (this only fully removes it from the shared worksheet the next time an Inputter re-syncs their list)', 'success');
+  }
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function updateStats() {
+  const assigned = allClients.filter(c => c.reviewer === currentReviewer);
+  const totalDocs = assigned.reduce((sum, c) => sum + c.documents.length, 0);
+  const inProgress = assigned.reduce((sum, c) => sum + c.documents.filter(d => ['Send Back', 'Reviewed'].includes(d.reviewerStatus || 'Pending')).length, 0);
+  const completed = assigned.reduce((sum, c) => sum + c.documents.filter(d => (d.reviewerStatus || 'Pending') === 'Completed').length, 0);
+
+  document.getElementById('statAssigned').textContent = assigned.length;
+  document.getElementById('statInProgress').textContent = inProgress;
+  document.getElementById('statCompleted').textContent = completed;
+}
+
+// ============================================================
+// DARK MODE
+// ============================================================
+function applyThemeLabel(theme) {
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+function toggleTheme() {
+  const current = localStorage.getItem('taxace-hub-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('taxace-hub-theme', next);
+  document.documentElement.setAttribute('data-theme', next);
+  applyThemeLabel(next);
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+
+  document.getElementById(tab + 'Tab').classList.add('active');
+  event.target.classList.add('active');
+
+  if (tab === 'summary') {
+    renderSummary();
+  } else if (tab === 'canopy') {
+    renderCanopyView();
+  } else if (tab === 'taxterms') {
+    initTaxTermsTab();
+  }
+}
+
+// ============================================================
+// CANOPY SYNC FUNCTIONS
+// ============================================================
+async function importCanopyData() {
+  showCanopyAlert('⏳ Importing latest Canopy CSV from Drive…', 'success');
+  if (!APPS_SCRIPT_URL) { showCanopyAlert('❌ Configure APPS_SCRIPT_URL first', 'error'); return; }
+
+  try {
+    // text/plain avoids a CORS preflight that Apps Script can't answer.
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ source: 'canopy-import' })
+    });
+    const result = await res.json();
+    if (result && result.success) {
+      showCanopyAlert(`✓ Imported ${result.imported} rows from ${result.sourceFile}`, 'success');
+    } else {
+      showCanopyAlert('⚠️ Import failed: ' + (result && result.error), 'error');
+    }
+  } catch (e) {
+    showCanopyAlert('⚠️ Could not reach the worksheet to import: ' + e.message, 'error');
+  }
+  fetchCanopyData();
+}
+
+async function fetchCanopyData() {
+  try {
+    console.log('📊 Fetching consolidated Canopy data for reviewer:', currentReviewer);
+
+    if (!APPS_SCRIPT_URL) {
+      console.error('❌ APPS_SCRIPT_URL not configured');
+      renderCanopyView();
+      return;
+    }
+
+    // GET request — reads cleanly cross-origin, no preflight, no
+    // "mode: no-cors" opaque-response guessing.
+    const res = await fetch(APPS_SCRIPT_URL + '?action=canopy-data', { method: 'GET' });
+    const result = await res.json();
+    console.log('✓ Full response received:', result);
+
+    let records = [];
+    if (result && Array.isArray(result.records)) {
+      records = result.records;
+      console.log(`✓ Found ${records.length} consolidated records`);
+    } else {
+      console.warn('⚠️ Unexpected response structure:', result);
+    }
+
+    localStorage.setItem('canopy_records', JSON.stringify(records));
+    if (records.length > 0) {
+      showCanopyAlert(`✓ Consolidated ${records.length} records - Reviewer + Canopy merged`, 'success');
+    } else {
+      showCanopyAlert(`⚠️ No consolidated data found. Click [📥 Import Canopy CSV] first, then [🔗 Match & Sync].`, 'success');
+    }
+
+    renderCanopyView();
+  } catch (e) {
+    console.error('❌ Fetch error:', e);
+    console.log('Will attempt to render from cached localStorage data');
+    renderCanopyView();
+  }
+}
+
+function matchCanopyWithReviews() {
+  showCanopyAlert('🔗 Matching Canopy with reviews...', 'success');
+  fetchCanopyData();
+}
+
+function renderCanopyView() {
+  let canopyRecords = [];
+  try {
+    const stored = localStorage.getItem('canopy_records');
+    if (stored) {
+      canopyRecords = JSON.parse(stored);
+      console.log('✓ Using consolidated Canopy data:', canopyRecords.length, 'records (grouped by client)');
+    }
+  } catch (e) {
+    console.log('Note: No cached Canopy data');
+  }
+
+  let html = `
+    <div style="margin-bottom: 20px;">
+      <h3>📊 Canopy Consolidation Report</h3>
+      <p style="color: var(--ink-soft);">One row per client from Client Summary, matched to Canopy by client name, with InputterDocs + Reviewer status joined in.</p>
+      <table style="width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 11px;">
+        <tr style="background: var(--paper-dim); border-bottom: 2px solid var(--line); position: sticky; top: 0;">
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Client</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Reviewer</th>
+          <th style="padding: 8px; text-align: center; border: 1px solid var(--line);">Total Docs</th>
+          <th style="padding: 8px; text-align: center; border: 1px solid var(--line);">Pending Docs</th>
+          <th style="padding: 8px; text-align: center; border: 1px solid var(--line);">Reviewer Status</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Tax Preparer</th>
+          <th style="padding: 8px; text-align: center; border: 1px solid var(--line);">Canopy Tax Year</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Return Type</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Subtask Status</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Subtask Name</th>
+          <th style="padding: 8px; text-align: left; border: 1px solid var(--line);">Assignee</th>
+          <th style="padding: 8px; text-align: center; border: 1px solid var(--line);">Canopy Match</th>
+        </tr>
+  `;
+
+  if (canopyRecords.length === 0) {
+    html += `
+      <tr style="border-bottom: 1px solid var(--line);">
+        <td colspan="12" style="padding: 20px; text-align: center; color: #999;">
+          No clients in Client Summary yet. Have an Inputter click Sync on the Inputter dashboard, then come back here and click [🔗 Match & Sync].
+        </td>
+      </tr>
+    `;
+  } else {
+    canopyRecords.forEach(record => {
+      const reviewStatus = record.reviewerstatus || 'Pending';
+      const reviewStatusColor = reviewStatus.includes('Completed') ? '#d1e7dd' : reviewStatus.includes('Send Back') ? '#fce4e4' : reviewStatus.includes('Reviewed') ? '#cfe2ff' : '#fff3cd';
+      const matched = !!record.canopyMatched;
+
+      html += `
+        <tr style="border-bottom: 1px solid var(--line); background: ${matched ? 'var(--paper)' : '#fce4e4'};">
+          <td style="padding: 8px; border: 1px solid var(--line); font-weight: 600;">${record.clientname || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.reviewer || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.totalDocs !== '' && record.totalDocs != null ? record.totalDocs : '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.pendingDocs !== '' && record.pendingDocs != null ? record.pendingDocs : '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">
+            <span style="background: ${reviewStatusColor}; padding: 2px 4px; border-radius: 2px; font-weight: 600;">
+              ${reviewStatus.includes('Completed') ? '✅' : reviewStatus.includes('Send Back') ? '↩️' : reviewStatus.includes('Reviewed') ? '✓' : '⏳'}
+              ${reviewStatus.substring(0, 30)}
+            </span>
+          </td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.taxpreparer || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center; font-size: 10px;">${record.canopytaxyear || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.taskreturntype || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">
+            <span style="background: #e8f4f8; padding: 2px 4px; border-radius: 2px; color: #003d8b;">
+              ${record.subtaskstatus ? record.subtaskstatus.substring(0, 40) : '—'}
+            </span>
+          </td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">
+            ${record.subtaskname ? record.subtaskname.split('; ').map(t => `<div>${t.substring(0, 30)}</div>`).join('') : '—'}
+          </td>
+          <td style="padding: 8px; border: 1px solid var(--line); font-size: 10px;">${record.subtaskassignee || '—'}</td>
+          <td style="padding: 8px; border: 1px solid var(--line); text-align: center;">
+            ${matched
+              ? `<span style="background: #d1e7dd; padding: 2px 4px; border-radius: 2px; color: #0f5132; font-size: 9px;">✓ Matched (${record.canopyTaskCount})</span>`
+              : `<span style="background: #fce4e4; padding: 2px 4px; border-radius: 2px; color: #842029; font-size: 9px;">⚠️ No Canopy match</span>`}
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  html += `</table>
+    <div style="margin-top: 16px; padding: 12px; background: var(--paper-dim); border-radius: 3px; font-size: 11px;">
+      <strong>📌 How this report is built:</strong>
+      Client Summary!ClientName is matched to Canopy!clientname (case/whitespace-insensitive). Once matched, this report
+      shows InputterDocs' Total Docs + Pending Docs, the Reviewer tab's Status, and Canopy's Tax Preparer, Tax Year,
+      Return Type, Subtask Status, Subtask Name and Assignee for that client.
+      <br>1️⃣ Make review changes in [👤 Assigned to Me] tab (these sync automatically as you go)
+      <br>2️⃣ Go to [🔄 Canopy Sync] tab
+      <br>3️⃣ Click [📥 Import Canopy CSV] to pull the latest export from the Drive folder
+      <br>4️⃣ Click [🔗 Match & Sync] to rebuild this report
+      <br>
+      <strong>Legend:</strong> ✅ Completed | ↩️ Send Back | ✓ Reviewed | ⏳ Pending
+      <br>🔴 Red rows = this client (from Client Summary) has no matching row in Canopy yet — check spelling/import freshness.
+      <br><strong>Total clients: ${canopyRecords.length}</strong>
+    </div>
+  `;
+  document.getElementById('canopyContent').innerHTML = html;
+}
+
+function showCanopyAlert(msg, type = 'success') {
+  const box = document.getElementById('canopyAlertBox');
+  const alertClass = type === 'info' ? 'error' : 'success';
+  box.innerHTML = `<div class="alert ${alertClass}">${msg}</div>`;
+  setTimeout(() => box.innerHTML = '', 5000);
+}
+
+function renderSummary() {
+  const assigned = allClients.filter(c => c.reviewer === currentReviewer);
+
+  let html = '<table style="width: 100%; border-collapse: collapse;">';
+  html += `
+    <tr style="background: var(--paper-dim); border-bottom: 2px solid var(--line);">
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Client Name</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Inputter</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Documents</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Input Status</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Your Review</th>
+      <th style="padding: 12px; text-align: left; font-weight: 600; border: 1px solid var(--line);">Comments</th>
+    </tr>
+  `;
+
+  assigned.forEach(client => {
+    const docNames = client.documents.map(d => d.docName);
+    const docStatuses = client.documents.map(d => d.status || 'Not Inputted');
+    const reviewStatuses = client.documents.map(d => d.reviewerStatus || 'Pending');
+    const docNotes = client.documents
+      .map(d => d.reviewerNotes || reviewerNotes[`${client.id}_${d.docId}`] || '')
+      .filter(n => n);
+
+    const totalDocs = client.documents.length;
+    const reviewedDocs = client.documents.filter(d => d.reviewerStatus === 'Reviewed' || d.reviewerStatus === 'Completed').length;
+
+    const docList = docNames.join(', ');
+    const docListDisplay = totalDocs > 3 ? `${docNames.slice(0, 3).join(', ')}...+${totalDocs - 3}` : docList;
+
+    const uniqueReviewStatuses = [...new Set(reviewStatuses)];
+    const reviewStatusDisplay = uniqueReviewStatuses.map(s => {
+      const count = reviewStatuses.filter(rs => rs === s).length;
+      const icon = s === 'Reviewed' || s === 'Completed' ? '✓' : s === 'Send Back' ? '↩️' : '⏳';
+      return count > 1 ? `${icon} ${count}x ${s}` : `${icon} ${s}`;
+    }).join('; ');
+
+    const notesDisplay = docNotes.length > 0 ? docNotes.slice(0, 2).join(' | ') : 'No comments';
+
+    const progressPercent = totalDocs > 0 ? Math.round((reviewedDocs / totalDocs) * 100) : 0;
+    const rowColor = progressPercent === 100 ? '#d1e7dd' : progressPercent > 50 ? '#cfe2ff' : progressPercent > 0 ? '#fff3cd' : 'white';
+
+    html += `
+      <tr style="border-bottom: 1px solid var(--line); background: ${rowColor};">
+        <td style="padding: 12px; border: 1px solid var(--line); font-weight: 600;">${client.name}</td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 12px;">${client.inputter}</td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; cursor: help;" title="${docList}">
+          <strong>${totalDocs} docs:</strong> ${docListDisplay}
+        </td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px;">
+          <span style="background: #e8f4f8; padding: 2px 4px; border-radius: 2px; color: #003d8b;">
+            ${totalDocs > 0 ? `✓ ${docStatuses.filter(s => s !== 'Not Inputted').length}/${totalDocs}` : 'None'}
+          </span>
+        </td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px;">
+          ${reviewStatusDisplay}
+          <br><small style="color: #666;">${reviewedDocs}/${totalDocs} reviewed (${progressPercent}%)</small>
+        </td>
+        <td style="padding: 12px; border: 1px solid var(--line); font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+          ${docNotes.length > 0 ? '✓ ' + notesDisplay.substring(0, 50) : 'No comments'}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += '</table>';
+  document.getElementById('summaryContent').innerHTML = html;
+}
+
+// ============================================================
+// SYNC TO WORKSHEET
+// ============================================================
+async function pushReviewerRecord(client, doc) {
+  // Fire-and-forget push of a single row right after a status/note
+  // change, so cross-device updates show up without waiting for the
+  // manual Sync button. The manual button still exists for a full,
+  // explicit re-sync of everything.
+  if (!APPS_SCRIPT_URL) return;
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        source: 'reviewer-sync',
+        records: [{
+          clientId: client.id,
+          docId: doc.docId,
+          status: doc.reviewerStatus || 'Pending',
+          notes: doc.reviewerNotes || reviewerNotes[`${client.id}_${doc.docId}`] || ''
+        }]
+      })
+    });
+  } catch (e) {
+    console.log('Background reviewer sync failed (will retry on next full Sync):', e.message);
+  }
+}
+
+async function syncToWorksheet() {
+  if (!APPS_SCRIPT_URL) {
+    showAlert('❌ Configure URL first', 'error');
+    return;
+  }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Syncing...';
+  setSyncState('busy', 'Syncing…');
+
+  try {
+    const reviewerRecords = [];
+    allClients.filter(c => c.reviewer === currentReviewer).forEach(client => {
+      client.documents.forEach(doc => {
+        reviewerRecords.push({
+          clientId: client.id,
+          docId: doc.docId,
+          status: doc.reviewerStatus || 'Pending',
+          notes: doc.reviewerNotes || reviewerNotes[`${client.id}_${doc.docId}`] || ''
+        });
+      });
+    });
+
+    console.log(`📤 Syncing ${reviewerRecords.length} records`);
+
+    if (reviewerRecords.length === 0) {
+      showAlert('⚠️ No records to sync', 'error');
+      setSyncState('err', 'Nothing to sync');
+      return;
+    }
+
+    // text/plain avoids the CORS preflight that Apps Script can't answer.
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ source: 'reviewer-sync', records: reviewerRecords, syncTime: new Date().toISOString() })
+    });
+
+    const result = await response.json();
+    console.log('Sync result:', result);
+
+    if (result && result.success) {
+      showAlert(`✓ Synced ${result.updated} records${result.skipped ? ' (' + result.skipped + ' skipped — not found in worksheet yet)' : ''}`, 'success');
+      setSyncState('ok', 'Synced ' + new Date().toLocaleTimeString());
+    } else {
+      showAlert('❌ Sync failed: ' + (result && result.error), 'error');
+      setSyncState('err', 'Sync failed');
+    }
+
+    // Pull back the canonical merged state right away.
+    await loadFromServer(true);
+    fetchCanopyData();
+  } catch (e) {
+    console.error('❌ Sync error:', e);
+    showAlert('❌ Sync failed: ' + e.message, 'error');
+    setSyncState('err', 'Sync failed (offline?)');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📤 Sync';
+  }
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function saveData() {
+  localStorage.setItem('taxace_clients', JSON.stringify(allClients));
+}
+
+function showAlert(msg, type = 'success', id = 'alertBox') {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.innerHTML = `<div class="alert ${type}">${msg}</div>`;
+  setTimeout(() => box.innerHTML = '', 5000);
+}
+
+function refreshDashboard() {
+  loadFromServer(false);
+}
+
+document.getElementById('searchBox').addEventListener('keyup', renderAssignedClients);
+</script>
+
+</body>
+</html>

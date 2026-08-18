@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaxAce Inputter Dashboard v4</title>
+<script>
+  // Apply saved theme before paint to avoid a light-mode flash.
+  (function() {
+    var saved = localStorage.getItem('taxace-hub-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --paper-dim: #f2f2f2;
+    --ink: #241f18;
+    --ink-soft: #5c5343;
+    --rust: #b5502e;
+    --rust-dim: #8f3f24;
+    --green: #4c6b47;
+    --line: #dcdcdc;
+  }
+
+  html[data-theme="dark"] {
+    --paper: #1b1815;
+    --paper-dim: #241f19;
+    --ink: #efe9df;
+    --ink-soft: #b3a891;
+    --rust: #e08a5e;
+    --rust-dim: #c96f45;
+    --green: #7fa375;
+    --line: #3a352b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea {
+    background: var(--paper-dim);
+    color: var(--ink);
+    border-color: var(--line);
+  }
+
+  .theme-toggle {
+    padding: 7px 14px;
+    border: 1px solid var(--ink);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .theme-toggle:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .hub-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .hub-back-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    background: var(--paper);
+  }
+
+  .checklist-item input[type="checkbox"] {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .checklist-item.checked .checklist-text {
+    text-decoration: line-through;
+    color: var(--ink-soft);
+  }
+
+  .checklist-text {
+    flex: 1;
+    font-size: 13.5px;
+  }
+
+  .checklist-category {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .checklist-item .del-btn {
+    border: none;
+    background: none;
+    color: var(--rust);
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .kb-card {
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--rust);
+    border-radius: 3px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--paper);
+  }
+
+  .kb-card .kb-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+  }
+
+  .kb-card .kb-title {
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+
+  .kb-card .kb-category {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .kb-card .kb-body {
+    display: none;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .kb-card.expanded .kb-body {
+    display: block;
+  }
+
+  .kb-card .kb-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--rust);
+    font-weight: 600;
+  }
+
+  .kb-card .kb-actions {
+    margin-top: 10px;
+  }
+
+  .kb-card .kb-actions button {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: none;
+    background: none;
+    color: var(--rust);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .kb-card .kb-actions button:hover {
+    text-decoration: underline;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding: 20px 36px;
+    background: linear-gradient(135deg, transparent, transparent 38px, rgba(181,80,46,0.035) 38px, rgba(181,80,46,0.035) 76px) var(--paper);
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 0 0 4px;
+    font-size: 28px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 36px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .tab-button {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink-soft);
+    border-bottom: 3px solid transparent;
+    transition: all .2s ease;
+  }
+
+  .tab-button:hover {
+    color: var(--ink);
+  }
+
+  .tab-button.active {
+    color: var(--rust);
+    border-bottom-color: var(--rust);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+    padding: 24px 36px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 16px 36px;
+    background: var(--paper-dim);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: background .15s ease;
+  }
+
+  .btn.primary {
+    background: var(--rust);
+    color: white;
+  }
+
+  .btn.primary:hover {
+    background: var(--rust-dim);
+  }
+
+  .btn.secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+
+  .btn.secondary:hover {
+    background: var(--ink);
+    color: white;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+
+  .panel-head {
+    padding: 16px;
+    background: var(--paper-dim);
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+  }
+
+  .form-section {
+    padding: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .form-row-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  .alert.success {
+    background: #d1f2e2;
+    color: #155c2b;
+  }
+
+  .alert.error {
+    background: #fce4e4;
+    color: #922b21;
+  }
+
+  .alert.warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 16px;
+    border-radius: 4px;
+  }
+
+  .stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--rust);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .client-summary {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--paper);
+  }
+
+  .client-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .client-info {
+    flex: 1;
+  }
+
+  .client-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .client-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .doc-summary {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .doc-count {
+    font-weight: 600;
+  }
+
+  .reviewer-badge {
+    display: inline-block;
+    background: #e8f4f8;
+    color: #005a8e;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 4px;
+  }
+
+  .action-buttons button {
+    padding: 6px 12px;
+    font-size: 11px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .btn-edit {
+    background: #e3f0ff;
+    color: #003d8b;
+  }
+
+  .btn-delete {
+    background: #fce4e4;
+    color: #922b21;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--ink-soft);
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+
+  .modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background: var(--paper);
+    padding: 32px;
+    border-radius: 4px;
+    max-width: 900px;
+    width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .modal-subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+  }
+
+  .doc-item {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--paper);
+  }
+
+  .doc-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .doc-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .doc-category {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .status-select {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 150px;
+    font-weight: 600;
+  }
+
+  .status-inputted {
+    color: #0f5132;
+  }
+
+  .status-not-inputted {
+    color: #856404;
+  }
+
+  .status-reinputted {
+    color: #084298;
+  }
+
+  .status-completed {
+    color: #0f5132;
+  }
+
+  .notes-area {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    min-height: 60px;
+    margin-top: 8px;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .status-badge.inputted {
+    background: #d1f2e2;
+    color: #0f5132;
+  }
+
+  .status-badge.not-inputted {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .status-badge.reinputted {
+    background: #cfe2ff;
+    color: #084298;
+  }
+
+  .status-badge.completed {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .doc-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .section-header {
+    font-weight: 600;
+    font-size: 13px;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--rust);
+    color: var(--rust);
+  }
+
+  .add-doc-form {
+    background: var(--paper-dim);
+    padding: 16px;
+    border-radius: 3px;
+    margin-top: 20px;
+  }
+
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .sync-indicator {
+    font-size: 11px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    display: inline-block;
+  }
+
+  .sync-dot.ok { background: #2f9e5f; }
+  .sync-dot.err { background: #c0392b; }
+  .sync-dot.busy { background: #d9a520; animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<header style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+  <div>
+    <h1>📝 TaxAce Inputter Dashboard v4</h1>
+    <div style="font-size: 13px; color: var(--ink-soft);">Track and edit individual documents with status updates — shared live with the Reviewer dashboard</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <a href="./index.html" class="hub-back-btn">← Hub</a>
+    <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-button active" onclick="switchTab('checklist')">✓ Client List</button>
+  <button class="tab-button" onclick="switchTab('add')">➕ Add Client</button>
+  <button class="tab-button" onclick="switchTab('manage')">📋 Manage Documents</button>
+  <button class="tab-button" onclick="switchTab('inpChecklist')">☑️ Inputter Checklist</button>
+  <button class="tab-button" onclick="switchTab('knowledgeBase')">📚 Knowledge Base</button>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="clientSearch" class="search-box" placeholder="🔍 Search clients...">
+  <select id="inputterFilter" class="search-box" style="flex: 0 1 200px;" onchange="renderList()">
+    <option value="">All Inputters</option>
+  </select>
+  <button class="btn secondary" onclick="refreshTable()">🔄 Refresh</button>
+  <button class="btn primary" onclick="syncToWorksheet()">📤 Sync</button>
+  <span id="syncIndicator" class="sync-indicator"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">Not synced yet</span></span>
+</div>
+
+<!-- CHECKLIST TAB -->
+<div id="checklistTab" class="tab-content active">
+  <div class="container">
+    <div id="alertBox"></div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="statClients">0</div>
+        <div class="stat-label">Clients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statDocs">0</div>
+        <div class="stat-label">Total Docs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statCompleted">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+
+    <div id="clientsList"></div>
+  </div>
+</div>
+
+<!-- ADD CLIENT TAB -->
+<div id="addTab" class="tab-content">
+  <div class="container">
+    <div id="addAlertBox"></div>
+
+    <div class="panel">
+      <div class="panel-head">➕ Add New Client</div>
+      <div class="form-section">
+        <div class="form-row-4">
+          <div class="form-group">
+            <label>Client Name *</label>
+            <input type="text" id="clientName" placeholder="e.g., Anthony Joseph">
+          </div>
+          <div class="form-group">
+            <label>Tax Year *</label>
+            <input type="number" id="taxYear" min="2000" max="2100" placeholder="2025">
+          </div>
+          <div class="form-group">
+            <label>Reviewer *</label>
+            <select id="assignedReviewer">
+              <option value="">Select...</option>
+              <option value="dani">Dani</option>
+              <option value="annalyn">Annalyn</option>
+              <option value="lyndon">Lyndon</option>
+              <option value="jessel">Jessel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Your Name *</label>
+            <input type="text" id="inputterName" placeholder="Your name">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" onclick="openDocumentSelector()">Select Documents & Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT SELECTOR MODAL -->
+<div id="docSelectorModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-title">📋 Select Documents</div>
+    <p style="color: var(--ink-soft); margin-bottom: 16px;">Check the documents you need for this client:</p>
+
+    <label style="display: flex; gap: 8px; margin-bottom: 16px; font-weight: 600;">
+      <input type="checkbox" id="selectAllDocs" onchange="toggleSelectAll()">
+      Select All / Deselect All
+    </label>
+
+    <div id="docList" style="max-height: 350px; overflow-y: auto; border: 1px solid var(--line); border-radius: 3px; padding: 12px;"></div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;">
+      <button class="btn secondary" onclick="closeDocumentSelector()">Cancel</button>
+      <button class="btn primary" onclick="createClientWithSelectedDocs()">Create Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGE DOCUMENTS TAB -->
+<div id="manageTab" class="tab-content">
+  <div class="container">
+    <div id="manageAlertBox"></div>
+
+    <div class="panel">
+      <div class="panel-head">📋 Manage Document Templates</div>
+      <div class="form-section">
+        <p style="color: var(--ink-soft); margin-bottom: 20px;">Add or remove document templates. These documents appear when creating new clients. New templates are saved to the shared worksheet so every dashboard sees them.</p>
+
+        <div id="templatesList" style="margin-bottom: 24px;"></div>
+
+        <div style="background: var(--paper-dim); padding: 16px; border-radius: 3px; margin-top: 24px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 14px;">➕ Add New Document Template</h3>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>Document Name *</label>
+              <input type="text" id="newDocName" placeholder="e.g., K-1 Form">
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="newDocCategory">
+                <option value="">Select category...</option>
+                <option value="Tax Returns">Tax Returns</option>
+                <option value="1099 Forms">1099 Forms</option>
+                <option value="Wage Documents">Wage Documents</option>
+                <option value="Partnership/Corp">Partnership/Corp</option>
+                <option value="Deductions">Deductions</option>
+                <option value="Supporting">Supporting Documents</option>
+                <option value="Education">Education</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn primary" onclick="addNewDocTemplate()">Add Template</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INPUTTER CHECKLIST TAB -->
+<div id="inpChecklistTab" class="tab-content">
+  <div class="container">
+    <div id="checklistAlertBox"></div>
+
+    <div class="panel">
+      <div class="panel-head">☑️ Inputter Process Checklist</div>
+      <div class="form-section">
+        <p style="color: var(--ink-soft); margin-bottom: 20px;">Standard steps to run through for each client. Check items off as you work — they reset per client at your discretion using "Uncheck All". Stored in this browser.</p>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center;">
+          <span id="checklistProgress" style="font-weight: 600; font-size: 13px; color: var(--rust);"></span>
+          <button class="btn secondary" onclick="uncheckAllChecklist()" style="margin-left: auto;">↺ Uncheck All</button>
+        </div>
+
+        <div id="checklistItems" style="margin-bottom: 24px;"></div>
+
+        <div style="background: var(--paper-dim); padding: 16px; border-radius: 3px; margin-top: 24px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 14px;">➕ Add Checklist Item</h3>
+          <div class="form-row-3" style="display:grid; grid-template-columns: 2fr 1fr auto; gap: 12px;">
+            <div class="form-group">
+              <label>Item *</label>
+              <input type="text" id="newChecklistItem" placeholder="e.g., Confirm SSN matches source docs">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" id="newChecklistCategory" placeholder="e.g., Intake" list="checklistCategoryList">
+              <datalist id="checklistCategoryList"></datalist>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn primary" onclick="addChecklistItem()">Add Item</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KNOWLEDGE BASE TAB -->
+<div id="knowledgeBaseTab" class="tab-content">
+  <div class="container">
+    <div id="kbAlertBox"></div>
+
+    <div class="panel">
+      <div class="panel-head">📚 Knowledge Base &amp; Training Guides</div>
+      <div class="form-section">
+        <p style="color: var(--ink-soft); margin-bottom: 20px;">Reference notes, SOPs, and training material for the Inputter role. Stored in this browser — paste guide text directly or link out to a shared doc.</p>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+          <input type="text" id="kbSearch" class="search-box" placeholder="🔍 Search guides..." onkeyup="renderKnowledgeBase()" style="flex: 1; min-width: 240px;">
+          <select id="kbCategoryFilter" class="search-box" style="flex: 0 1 200px;" onchange="renderKnowledgeBase()">
+            <option value="">All Categories</option>
+          </select>
+          <button class="btn primary" onclick="openAddKbForm()">➕ Add Guide</button>
+        </div>
+
+        <div id="addKbForm" style="display:none; background: var(--paper-dim); padding: 16px; border-radius: 3px; margin-bottom: 20px;">
+          <div class="form-row-3" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" id="newKbTitle" placeholder="e.g., How to handle a missing K-1">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" id="newKbCategory" placeholder="e.g., Documents" list="kbCategoryList">
+              <datalist id="kbCategoryList"></datalist>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label>Reference Link (optional)</label>
+            <input type="text" id="newKbLink" placeholder="https://...">
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label>Guide Content *</label>
+            <textarea id="newKbContent" rows="6" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:3px; font-family:inherit;" placeholder="Paste or write the training guide content here..."></textarea>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn primary" onclick="addKbEntry()">Save Guide</button>
+            <button class="btn secondary" onclick="closeAddKbForm()">Cancel</button>
+          </div>
+        </div>
+
+        <div id="kbList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DOCUMENTS MODAL -->
+<div id="editDocModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-title">📋 Update Documents</div>
+    <div class="modal-subtitle" id="editClientInfo"></div>
+
+    <input type="text" id="docSearch" placeholder="🔍 Search documents..." style="width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 3px; margin-bottom: 16px; font-size: 13px;" onkeyup="filterDocList()">
+
+    <div id="docEditList" class="doc-grid"></div>
+
+    <!-- ADD MORE DOCUMENTS SECTION -->
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--rust);">
+      <div style="font-weight: 600; font-size: 14px; margin-bottom: 16px; color: var(--rust);">➕ Add More Documents</div>
+      <p style="font-size: 12px; color: var(--ink-soft); margin-bottom: 12px;">Client provided additional documents? Check them below to add:</p>
+
+      <div id="addMoreDocList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 3px; padding: 12px; margin-bottom: 16px;"></div>
+
+      <button class="btn secondary" onclick="addSelectedDocuments()" style="background: #e3f0ff; color: #003d8b; border: 1px solid #003d8b;">✓ Add Selected Documents</button>
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line);">
+      <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
+      <button class="btn primary" onclick="saveDocumentsChanges()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Paste your Apps Script web app URL here (see Code.gs deployment notes).
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMQxwguHvyx8h1P-4hcIQJW8vpAeYtSNt9agaqyAg9oZldfhAmUiUFdsQ5jhgqVaVj3Q/exec';
+
+// Fallback/base template list — used instantly on load and merged with
+// whatever the shared worksheet has (see loadTemplatesFromServer). This
+// means the dashboard still works even if the server is unreachable.
+const allDocs = [
+  { id: 'form-1040', name: 'Form 1040', category: 'Tax Returns' },
+  { id: 'schedule-a', name: 'Schedule A', category: 'Tax Returns' },
+  { id: 'schedule-c', name: 'Schedule C', category: 'Tax Returns' },
+  { id: 'schedule-d', name: 'Schedule D', category: 'Tax Returns' },
+  { id: 'schedule-e', name: 'Schedule E', category: 'Tax Returns' },
+  { id: '1099-nec', name: '1099-NEC', category: '1099 Forms' },
+  { id: '1099-misc', name: '1099-MISC', category: '1099 Forms' },
+  { id: '1099-int', name: '1099-INT', category: '1099 Forms' },
+  { id: '1099-div', name: '1099-DIV', category: '1099 Forms' },
+  { id: '1099-cap', name: '1099-CAP', category: '1099 Forms' },
+  { id: '1099-oid', name: '1099-OID', category: '1099 Forms' },
+  { id: '1099k', name: '1099-K', category: '1099 Forms' },
+  { id: 'w2', name: 'W2 Forms', category: 'Wage Documents' },
+  { id: 'w2g', name: 'W2-G', category: 'Wage Documents' },
+  { id: 'k1', name: 'K-1 Forms', category: 'Partnership/Corp' },
+  { id: '1120s', name: '1120-S', category: 'Partnership/Corp' },
+  { id: '1065', name: '1065', category: 'Partnership/Corp' },
+  { id: 'mortgage', name: 'Mortgage Statement', category: 'Deductions' },
+  { id: 'property-tax', name: 'Property Tax', category: 'Deductions' },
+  { id: 'charitable', name: 'Charitable', category: 'Deductions' },
+  { id: 'medical', name: 'Medical', category: 'Deductions' },
+  { id: 'vehicle', name: 'Vehicle', category: 'Deductions' },
+  { id: 'home-office', name: 'Home Office', category: 'Deductions' },
+  { id: 'bank-stmt', name: 'Bank Statements', category: 'Supporting' },
+  { id: 'credit-card', name: 'Credit Card', category: 'Supporting' },
+  { id: 'receipts', name: 'Receipts', category: 'Supporting' },
+  { id: 'payroll', name: 'Payroll', category: 'Supporting' },
+  { id: 'loan', name: 'Loan Statements', category: 'Supporting' },
+  { id: '1098t', name: '1098-T', category: 'Education' },
+  { id: 'student-loan', name: 'Student Loan', category: 'Education' }
+];
+
+const statusOptions = [
+  { value: 'Inputted', label: '✓ Inputted', class: 'inputted' },
+  { value: 'Not Inputted', label: '⏳ Not Inputted', class: 'not-inputted' },
+  { value: 'Re-Inputted', label: '↻ Re-Inputted', class: 'reinputted' },
+  { value: 'Completed', label: '✅ Completed', class: 'completed' }
+];
+
+let clients = [];
+let editingClientId = null;
+let lastServerFetch = null;
+
+// ============================================================
+// STORAGE (local cache only — the worksheet is the source of truth)
+// ============================================================
+function saveData() {
+  localStorage.setItem('taxace_clients', JSON.stringify(clients));
+}
+
+function loadData() {
+  const saved = localStorage.getItem('taxace_clients');
+  if (saved) {
+    try { clients = JSON.parse(saved); } catch (e) { clients = []; }
+  }
+}
+
+// ============================================================
+// SERVER SYNC — this is what makes the Inputter and Reviewer
+// dashboards agree with each other across different computers.
+// ============================================================
+function setSyncState(state, label) {
+  const dot = document.getElementById('syncDot');
+  const status = document.getElementById('syncStatus');
+  dot.className = 'sync-dot' + (state ? ' ' + state : '');
+  status.textContent = label;
+}
+
+async function loadFromServer(silent) {
+  if (!APPS_SCRIPT_URL) return;
+  setSyncState('busy', 'Loading shared data…');
+  try {
+    // GET request — never triggers a CORS preflight, so this works
+    // reliably from a static HTML file talking to Apps Script.
+    const res = await fetch(APPS_SCRIPT_URL + '?action=get-all-clients', { method: 'GET' });
+    const result = await res.json();
+    if (result && result.success) {
+      clients = result.clients || [];
+      saveData();
+      lastServerFetch = new Date();
+      renderList();
+      updateStats();
+      updateInputterFilter();
+      setSyncState('ok', 'Synced ' + lastServerFetch.toLocaleTimeString());
+      if (!silent) showAlert('✓ Loaded latest shared data (' + clients.length + ' clients)', 'success', 'alertBox');
+    } else {
+      setSyncState('err', 'Server error on load');
+      if (!silent) showAlert('⚠️ Could not load shared data: ' + (result && result.error), 'error', 'alertBox');
+    }
+  } catch (e) {
+    setSyncState('err', 'Offline — showing cached data');
+    console.error('loadFromServer failed:', e);
+    if (!silent) showAlert('⚠️ Could not reach the worksheet. Showing your last cached data.', 'error', 'alertBox');
+  }
+}
+
+async function pushToServer(silent) {
+  if (!APPS_SCRIPT_URL) {
+    showAlert('❌ Configure APPS_SCRIPT_URL first', 'error', 'alertBox');
+    return false;
+  }
+  setSyncState('busy', 'Syncing…');
+  try {
+    // text/plain avoids a CORS preflight (application/json would trigger
+    // one, and Apps Script web apps don't answer OPTIONS requests).
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ source: 'inputter-sync', clients: clients, syncTime: new Date().toISOString() })
+    });
+    const result = await res.json();
+    if (result && result.success) {
+      setSyncState('ok', 'Synced ' + new Date().toLocaleTimeString());
+      if (!silent) showAlert(`✓ Synced ${clients.length} clients, ${result.written} document rows`, 'success', 'alertBox');
+      return true;
+    }
+    setSyncState('err', 'Sync failed');
+    if (!silent) showAlert('❌ Sync error: ' + (result && result.error), 'error', 'alertBox');
+    return false;
+  } catch (e) {
+    setSyncState('err', 'Sync failed (offline?)');
+    if (!silent) showAlert('❌ Sync failed: ' + e.message, 'error', 'alertBox');
+    return false;
+  }
+}
+
+async function syncToWorksheet() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳...';
+  await pushToServer(false);
+  // Pull back immediately after pushing so this browser reflects the
+  // canonical merged state (e.g. Reviewer edits that came in meanwhile).
+  await loadFromServer(true);
+  btn.disabled = false;
+  btn.textContent = '📤 Sync';
+}
+
+async function loadTemplatesFromServer() {
+  if (!APPS_SCRIPT_URL) return;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=get-templates', { method: 'GET' });
+    const result = await res.json();
+    if (result && result.success && Array.isArray(result.templates)) {
+      result.templates.forEach(t => {
+        if (!allDocs.find(d => d.id === t.id)) {
+          allDocs.push({ id: t.id, name: t.name, category: t.category || 'Other' });
+        }
+      });
+      renderTemplatesList();
+    }
+  } catch (e) {
+    console.log('Template fetch skipped (offline or not configured):', e.message);
+  }
+}
+
+// ============================================================
+// DARK MODE
+// ============================================================
+function applyThemeLabel(theme) {
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+function toggleTheme() {
+  const current = localStorage.getItem('taxace-hub-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('taxace-hub-theme', next);
+  document.documentElement.setAttribute('data-theme', next);
+  applyThemeLabel(next);
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab + 'Tab').classList.add('active');
+  event.target.classList.add('active');
+
+  if (tab === 'inpChecklist') {
+    renderChecklist();
+  } else if (tab === 'knowledgeBase') {
+    renderKnowledgeBase();
+  }
+}
+
+// ============================================================
+// DOCUMENT SELECTOR
+// ============================================================
+function openDocumentSelector() {
+  const name = document.getElementById('clientName').value.trim();
+  const year = document.getElementById('taxYear').value;
+  const reviewer = document.getElementById('assignedReviewer').value;
+  const inputter = document.getElementById('inputterName').value.trim();
+
+  if (!name || !year || !reviewer || !inputter) {
+    showAlert('Fill all fields', 'error', 'addAlertBox');
+    return;
+  }
+
+  let html = '';
+  let currentCat = '';
+  allDocs.forEach(doc => {
+    if (doc.category !== currentCat) {
+      html += `<div style="font-weight: 600; font-size: 12px; background: #f5f5f5; padding: 8px 12px; margin: 12px 0 8px 0;">${doc.category}</div>`;
+      currentCat = doc.category;
+    }
+    html += `
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="doc_${doc.id}" checked>
+          <span>${doc.name}</span>
+        </label>
+      </div>
+    `;
+  });
+
+  document.getElementById('docList').innerHTML = html;
+  document.getElementById('docSelectorModal').classList.add('show');
+}
+
+function closeDocumentSelector() {
+  document.getElementById('docSelectorModal').classList.remove('show');
+}
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAllDocs').checked;
+  document.querySelectorAll('input[id^="doc_"]').forEach(cb => cb.checked = checked);
+}
+
+function getSelectedDocs() {
+  const selected = [];
+  document.querySelectorAll('input[id^="doc_"]:checked').forEach(cb => {
+    const docId = cb.id.replace('doc_', '');
+    const doc = allDocs.find(d => d.id === docId);
+    if (doc) {
+      selected.push({
+        docId: doc.id,
+        docName: doc.name,
+        category: doc.category,
+        status: 'Not Inputted',
+        notes: '',
+        dateUpdated: ''
+      });
+    }
+  });
+  return selected;
+}
+
+function createClientWithSelectedDocs() {
+  const docs = getSelectedDocs();
+  if (docs.length === 0) {
+    showAlert('Select at least 1 document', 'error', 'addAlertBox');
+    return;
+  }
+
+  const client = {
+    id: 'c_' + Date.now(),
+    name: document.getElementById('clientName').value.trim(),
+    taxYear: document.getElementById('taxYear').value,
+    reviewer: document.getElementById('assignedReviewer').value,
+    inputter: document.getElementById('inputterName').value.trim(),
+    dateAdded: new Date().toISOString().split('T')[0],
+    documents: docs
+  };
+
+  clients.push(client);
+  saveData();
+
+  document.getElementById('clientName').value = '';
+  document.getElementById('taxYear').value = new Date().getFullYear();
+  document.getElementById('assignedReviewer').value = '';
+  document.getElementById('inputterName').value = '';
+  document.getElementById('selectAllDocs').checked = false;
+
+  closeDocumentSelector();
+  switchTab('checklist');
+  renderList();
+  updateStats();
+  updateInputterFilter();
+  showAlert(`✓ Created with ${docs.length} docs — syncing to shared worksheet…`, 'success', 'alertBox');
+  pushToServer(true);
+}
+
+// ============================================================
+// EDIT DOCUMENTS
+// ============================================================
+function editClient(id) {
+  const client = clients.find(c => c.id === id);
+  if (!client) return;
+
+  editingClientId = id;
+  document.getElementById('editClientInfo').innerHTML = `
+    <strong>${client.name}</strong> | Tax Year: ${client.taxYear} | Inputter: ${client.inputter} | Reviewer: ${client.reviewer}
+  `;
+
+  document.getElementById('docSearch').value = '';
+  renderDocEditList();
+  document.getElementById('editDocModal').classList.add('show');
+}
+
+function renderDocEditList() {
+  const client = clients.find(c => c.id === editingClientId);
+  if (!client) return;
+
+  const search = document.getElementById('docSearch').value.toLowerCase();
+
+  let html = '';
+  let currentCat = '';
+
+  client.documents
+    .filter(d => d.docName.toLowerCase().includes(search))
+    .forEach(doc => {
+      if (doc.category !== currentCat) {
+        html += `<div class="section-header">${doc.category}</div>`;
+        currentCat = doc.category;
+      }
+
+      const statusClass = statusOptions.find(s => s.value === doc.status)?.class || '';
+
+      html += `
+        <div class="doc-item">
+          <div class="doc-item-header">
+            <div>
+              <div class="doc-name">${doc.docName}</div>
+              <div class="doc-category">${doc.category}</div>
+              ${doc.reviewerStatus ? `<div style="font-size: 10px; color: #005a8e; margin-top: 4px;">Reviewer: ${doc.reviewerStatus}${doc.reviewerNotes ? ' — "' + doc.reviewerNotes + '"' : ''}</div>` : ''}
+            </div>
+            <select class="status-select status-${statusClass}" id="status_${doc.docId}" onchange="updateDocDisplay(this)">
+              ${statusOptions.map(opt => `<option value="${opt.value}" ${doc.status === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
+            </select>
+          </div>
+          <textarea class="notes-area" id="notes_${doc.docId}" placeholder="Notes...">${doc.notes}</textarea>
+        </div>
+      `;
+    });
+
+  document.getElementById('docEditList').innerHTML = html;
+  renderAddMoreDocuments();
+}
+
+function renderAddMoreDocuments() {
+  const client = clients.find(c => c.id === editingClientId);
+  if (!client) return;
+
+  const existingDocIds = new Set(client.documents.map(d => d.docId));
+  const availableDocs = allDocs.filter(doc => !existingDocIds.has(doc.id));
+
+  if (availableDocs.length === 0) {
+    document.getElementById('addMoreDocList').innerHTML = '<div style="padding: 12px; color: var(--ink-soft); font-size: 12px;">All documents already added to this client ✓</div>';
+    return;
+  }
+
+  let html = '';
+  let currentCat = '';
+
+  availableDocs.forEach(doc => {
+    if (doc.category !== currentCat) {
+      html += `<div style="font-weight: 600; font-size: 12px; background: #f5f5f5; padding: 8px 12px; margin: 12px 0 8px 0;">${doc.category}</div>`;
+      currentCat = doc.category;
+    }
+    html += `
+      <div style="padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="addDoc_${doc.id}">
+          <span style="font-size: 13px;">${doc.name}</span>
+        </label>
+      </div>
+    `;
+  });
+
+  document.getElementById('addMoreDocList').innerHTML = html;
+}
+
+function addSelectedDocuments() {
+  const client = clients.find(c => c.id === editingClientId);
+  if (!client) return;
+
+  const checkboxes = document.querySelectorAll('input[id^="addDoc_"]:checked');
+  let addedCount = 0;
+
+  checkboxes.forEach(cb => {
+    const docId = cb.id.replace('addDoc_', '');
+    const doc = allDocs.find(d => d.id === docId);
+
+    if (doc) {
+      client.documents.push({
+        docId: doc.id,
+        docName: doc.name,
+        category: doc.category,
+        status: 'Not Inputted',
+        notes: '',
+        dateUpdated: ''
+      });
+      addedCount++;
+    }
+  });
+
+  if (addedCount > 0) {
+    saveData();
+    renderDocEditList();
+    updateStats();
+    showAlert(`✓ Added ${addedCount} document(s)`, 'success', 'alertBox');
+    pushToServer(true);
+  } else {
+    showAlert('Select documents to add', 'error', 'alertBox');
+  }
+}
+
+function updateDocDisplay(el) {
+  const statusClass = statusOptions.find(s => s.value === el.value)?.class || '';
+  el.className = `status-select status-${statusClass}`;
+}
+
+function filterDocList() {
+  renderDocEditList();
+}
+
+function saveDocumentsChanges() {
+  const client = clients.find(c => c.id === editingClientId);
+  if (!client) return;
+
+  client.documents.forEach(doc => {
+    const statusEl = document.getElementById(`status_${doc.docId}`);
+    const notesEl = document.getElementById(`notes_${doc.docId}`);
+
+    if (statusEl) {
+      doc.status = statusEl.value;
+      doc.notes = notesEl?.value || '';
+      doc.dateUpdated = new Date().toISOString().split('T')[0];
+    }
+  });
+
+  saveData();
+  renderList();
+  updateStats();
+  closeEditModal();
+  showAlert('✓ Documents updated — syncing…', 'success', 'alertBox');
+  pushToServer(true);
+}
+
+function closeEditModal() {
+  document.getElementById('editDocModal').classList.remove('show');
+  editingClientId = null;
+}
+
+// ============================================================
+// LIST & STATS
+// ============================================================
+function renderList() {
+  const search = document.getElementById('clientSearch').value.toLowerCase();
+  const inputterFilter = document.getElementById('inputterFilter').value;
+
+  let filtered = clients.filter(c => c.name.toLowerCase().includes(search) || c.inputter.toLowerCase().includes(search));
+
+  if (inputterFilter) {
+    filtered = filtered.filter(c => c.inputter === inputterFilter);
+  }
+
+  if (filtered.length === 0) {
+    document.getElementById('clientsList').innerHTML = `<div class="empty-state">No clients match your criteria.</div>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(c => {
+    const inputted = c.documents.filter(d => d.status === 'Inputted').length;
+    const reinputted = c.documents.filter(d => d.status === 'Re-Inputted').length;
+    const completed = c.documents.filter(d => d.status === 'Completed').length;
+    const notInputted = c.documents.filter(d => d.status === 'Not Inputted').length;
+    const total = c.documents.length;
+
+    const worked = total - notInputted;
+    const pct = total > 0 ? Math.round((worked / total) * 100) : 0;
+
+    const reviewedByReviewer = c.documents.filter(d => d.reviewerStatus === 'Reviewed' || d.reviewerStatus === 'Completed').length;
+    const sentBack = c.documents.filter(d => d.reviewerStatus === 'Send Back').length;
+
+    html += `
+      <div class="client-summary">
+        <div class="client-header">
+          <div class="client-info">
+            <div class="client-name">${c.name}</div>
+            <div class="client-meta">Year: ${c.taxYear} | Inputter: ${c.inputter} | <span class="reviewer-badge">${c.reviewer}</span></div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn-edit" onclick="editClient('${c.id}')">✏️ Edit Docs</button>
+            <button class="btn-delete" onclick="deleteClient('${c.id}')">🗑️ Delete</button>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div style="flex: 1; background: var(--line); height: 8px; border-radius: 4px; overflow: hidden;">
+              <div style="height: 100%; background: var(--rust); width: ${pct}%; transition: width 0.3s;"></div>
+            </div>
+            <span style="font-weight: 600; font-size: 12px; color: var(--rust);">${pct}%</span>
+          </div>
+        </div>
+
+        <!-- Document Status Breakdown -->
+        <div class="doc-summary">
+          <span class="doc-count">✓ Inputted: ${inputted}</span>
+          <span class="doc-count">↻ Re-Inputted: ${reinputted}</span>
+          <span class="doc-count">✅ Completed: ${completed}</span>
+          <span class="doc-count">⏳ Not Inputted: ${notInputted}</span>
+          <span class="doc-count">📋 Total: ${total}</span>
+          ${sentBack > 0 ? `<span class="doc-count" style="color: #922b21;">↩️ Sent Back by Reviewer: ${sentBack}</span>` : ''}
+          ${reviewedByReviewer > 0 ? `<span class="doc-count" style="color: #084298;">✓ Reviewer Cleared: ${reviewedByReviewer}</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('clientsList').innerHTML = html;
+}
+
+function deleteClient(id) {
+  if (!confirm('Delete this client?')) return;
+  clients = clients.filter(c => c.id !== id);
+  saveData();
+  renderList();
+  updateStats();
+  showAlert('✓ Deleted locally — click Sync to remove it from the shared worksheet too', 'success', 'alertBox');
+}
+
+function updateStats() {
+  const totalClients = clients.length;
+  const totalDocs = clients.reduce((s, c) => s + c.documents.length, 0);
+
+  const completed = clients.reduce((s, c) => s + c.documents.filter(d => d.status === 'Completed').length, 0);
+  const pending = totalDocs - completed;
+
+  document.getElementById('statClients').textContent = totalClients;
+  document.getElementById('statDocs').textContent = totalDocs;
+  document.getElementById('statCompleted').textContent = completed;
+  document.getElementById('statPending').textContent = pending;
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function showAlert(msg, type = 'success', id = 'alertBox') {
+  const box = document.getElementById(id);
+  if (box) {
+    box.innerHTML = `<div class="alert ${type}">${msg}</div>`;
+    setTimeout(() => box.innerHTML = '', 5000);
+  }
+}
+
+function refreshTable() {
+  loadFromServer(false);
+}
+
+// ============================================================
+// MANAGE DOCUMENTS
+// ============================================================
+function renderTemplatesList() {
+  const allDocsByCategory = {};
+  allDocs.forEach(doc => {
+    if (!allDocsByCategory[doc.category]) {
+      allDocsByCategory[doc.category] = [];
+    }
+    allDocsByCategory[doc.category].push(doc);
+  });
+
+  let html = '';
+  Object.keys(allDocsByCategory).sort().forEach(cat => {
+    html += `<div style="font-weight: 600; font-size: 13px; margin-top: 16px; margin-bottom: 8px; color: var(--rust);">${cat}</div>`;
+
+    allDocsByCategory[cat].forEach(doc => {
+      html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 3px; margin-bottom: 8px; background: var(--paper);">
+          <div>
+            <div style="font-weight: 600; font-size: 13px;">${doc.name}</div>
+            <div style="font-size: 11px; color: var(--ink-soft);">${doc.category}</div>
+          </div>
+        </div>
+      `;
+    });
+  });
+
+  document.getElementById('templatesList').innerHTML = html || '<div style="color: var(--ink-soft);">No documents yet.</div>';
+}
+
+async function addNewDocTemplate() {
+  const name = document.getElementById('newDocName').value.trim();
+  const category = document.getElementById('newDocCategory').value;
+
+  if (!name || !category) {
+    showAlert('Fill all fields', 'error', 'manageAlertBox');
+    return;
+  }
+
+  if (allDocs.find(d => d.name.toLowerCase() === name.toLowerCase())) {
+    showAlert('Document already exists', 'error', 'manageAlertBox');
+    return;
+  }
+
+  const newDoc = { id: 'custom_' + Date.now(), name: name, category: category };
+  allDocs.push(newDoc);
+  renderTemplatesList();
+
+  document.getElementById('newDocName').value = '';
+  document.getElementById('newDocCategory').value = '';
+
+  // Save to the shared Document Templates tab so Reviewer/other Inputters see it too.
+  if (APPS_SCRIPT_URL) {
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ source: 'add-template', template: { name, category } })
+      });
+      const result = await res.json();
+      if (result && result.success) {
+        showAlert(`✓ Added "${name}" to ${category} and saved to the shared worksheet`, 'success', 'manageAlertBox');
+      } else {
+        showAlert(`✓ Added "${name}" locally, but saving to the worksheet failed: ${result && result.error}`, 'warning', 'manageAlertBox');
+      }
+    } catch (e) {
+      showAlert(`✓ Added "${name}" locally, but could not reach the worksheet to save it there.`, 'warning', 'manageAlertBox');
+    }
+  } else {
+    showAlert(`✓ Added "${name}" to ${category} (local only — configure APPS_SCRIPT_URL to share it)`, 'success', 'manageAlertBox');
+  }
+}
+
+// ============================================================
+// INPUTTER FILTER
+// ============================================================
+function updateInputterFilter() {
+  const inputters = new Set();
+  clients.forEach(c => inputters.add(c.inputter));
+
+  const filterSelect = document.getElementById('inputterFilter');
+  const currentValue = filterSelect.value;
+
+  filterSelect.innerHTML = '<option value="">All Inputters</option>';
+
+  Array.from(inputters).sort().forEach(inputter => {
+    const option = document.createElement('option');
+    option.value = inputter;
+    option.textContent = inputter;
+    filterSelect.appendChild(option);
+  });
+
+  filterSelect.value = currentValue;
+}
+
+// ============================================================
+// INPUTTER CHECKLIST (source: TaxAce Inputter's Checklist reference doc)
+// ============================================================
+const DEFAULT_CHECKLIST = [
+  { id: 'cl-1', section: 'Canopy', text: 'Make sure you are using both your monitors. Open Canopy on one monitor and ProSeries on the other.', checked: false },
+  { id: 'cl-2', section: 'Canopy', text: 'Check all documents on Canopy', checked: false },
+  { id: 'cl-3', section: 'Canopy', text: "If there are separate files make sure they are all the correct year and the correct name (client's name or spouse)", checked: false },
+  { id: 'cl-4', section: 'Canopy', text: 'If there are documents that you cannot input, move them to the NOT INPUTTED folder.', checked: false },
+  { id: 'cl-5', section: 'Canopy', text: 'If there is one document with multiple pages and some pages you do not know how to input, label them as NOT INPUTTED.', checked: false },
+
+  { id: 'cl-6', section: 'ProSeries', text: "Do not create a new ProSeries file — click Find Client and type their last name to find their file.", checked: false },
+  { id: 'cl-7', section: 'ProSeries', text: 'Open ProSeries, go to Client Status (Use Where Do I Input) and put an X on Client Tax Return in Process.', checked: false },
+  { id: 'cl-8', section: 'ProSeries', text: 'Begin inputting on the Info Wks', checked: false },
+
+  { id: 'cl-9', section: 'Info Wkst Checklist', text: "Open the Client Organizer. The layout of the Client Organizer is the same as the layout of our Info Wks.\n💡 Tip: Start from the top and work your way down.\n💡 Tip: If they want to use the same bank account, go to Part VIII in ProSeries Info Wks and scroll to Direct Deposit Info — confirm if the last four of the account is the same as last year. You will need those later when you list the items needed in the Canopy task comment section.", checked: false },
+  { id: 'cl-10', section: 'Info Wkst Checklist', text: 'Once you finish inputting the Client Organizer, go over the information you inputted and check that it is correct.', checked: false },
+  { id: 'cl-11', section: 'Info Wkst Checklist', text: 'Go to Canopy and begin inputting the rest of your forms.', checked: false },
+
+  { id: 'cl-12', section: 'ID Verification', text: "Check Canopy for a copy of the ID. If it's not there, check ProSeries under ID Verification. If it is expired, include it on the list of items needed in the Canopy task comment section.", checked: false },
+  { id: 'cl-13', section: 'ID Verification', text: "If it's a new client, input the ID they provided or request one for both if they are married.", checked: false },
+  { id: 'cl-14', section: 'ID Verification', text: 'Determine if ID is for the Taxpayer or Spouse, enter in the right section.', checked: false },
+  { id: 'cl-15', section: 'ID Verification', text: 'Issuing state is normally CA but please confirm.', checked: false },
+  { id: 'cl-16', section: 'ID Verification', text: 'License number is in the middle of the page right next to their picture.', checked: false },
+  { id: 'cl-17', section: 'ID Verification', text: 'Issue date is ISS on the bottom right corner of the license.', checked: false },
+  { id: 'cl-18', section: 'ID Verification', text: 'Expiration date is below the License number.', checked: false },
+
+  { id: 'cl-19', section: 'All Forms Checklist', text: 'Check the year on tax form', checked: false },
+  { id: 'cl-20', section: 'All Forms Checklist', text: 'Check the name on form', checked: false },
+  { id: 'cl-21', section: 'All Forms Checklist', text: 'Determine if form is for Taxpayer/Spouse', checked: false },
+  { id: 'cl-22', section: 'All Forms Checklist', text: 'Enter EIN — is it correct?', checked: false },
+  { id: 'cl-23', section: 'All Forms Checklist', text: 'The address should auto-populate once EIN is entered. If it does not, enter & verify.', checked: false },
+  { id: 'cl-24', section: 'All Forms Checklist', text: 'Put your initial in the top right on every form that you enter', checked: false },
+  { id: 'cl-25', section: 'All Forms Checklist', text: "Go to the comment section on the Canopy task and list the items/docs that your reviewer needs to request from the client. 3 items you might need to include aside from the tax docs:\n• ID if it's expired or missing\n• Confirmation of the last four digits of the bank account\n• Social security cards if they are new or if new dependents have been added", checked: false },
+  { id: 'cl-26', section: 'All Forms Checklist', text: "Use the Canopy task comment section to add the missing documents you need, and use ProSeries current-year notes to notify your reviewer/preparer for documents still needed or items you're unsure of.", checked: false },
+
+  { id: 'cl-27', section: 'Form W2', text: 'Enter EIN', checked: false },
+  { id: 'cl-28', section: 'Form W2', text: 'Check name and address that are populated', checked: false },
+  { id: 'cl-29', section: 'Form W2', text: 'Check Box if W2 is for spouse', checked: false },
+  { id: 'cl-30', section: 'Form W2', text: 'Check "Automatically Calculate" Box', checked: false },
+  { id: 'cl-31', section: 'Form W2', text: 'Enter Box 1 and Box 2', checked: false },
+  { id: 'cl-32', section: 'Form W2', text: 'Check that numbers are correct for Box 3-6', checked: false },
+  { id: 'cl-33', section: 'Form W2', text: 'Select "Retirement" Box if checked off on form', checked: false },
+  { id: 'cl-34', section: 'Form W2', text: 'Enter Box 12 if any', checked: false },
+  { id: 'cl-35', section: 'Form W2', text: 'Enter Box 15-17 and click confirm checkbox', checked: false },
+  { id: 'cl-36', section: 'Form W2', text: 'Enter Box 14', checked: false },
+  { id: 'cl-37', section: 'Form W2', text: 'Double check your form to make sure all entries match', checked: false },
+  { id: 'cl-38', section: 'Form W2', text: 'Check Box 15 if the number matches the number on the W2 in Canopy, then put an X on the box underneath that states "The withholding number(s) are accurate"', checked: false },
+
+  { id: 'cl-39', section: 'Form W2G', text: "Note: Up to 4 W2G's fit on one worksheet", checked: false },
+  { id: 'cl-40', section: 'Form W2G', text: 'Enter EIN', checked: false },
+  { id: 'cl-41', section: 'Form W2G', text: "Check that payer's name is accurate", checked: false },
+  { id: 'cl-42', section: 'Form W2G', text: 'Check Box if it is for spouse', checked: false },
+  { id: 'cl-43', section: 'Form W2G', text: 'Enter Box 1 - "Reportable Winnings"', checked: false },
+  { id: 'cl-44', section: 'Form W2G', text: 'Enter Box 4 - "Federal Income Tax Withheld"', checked: false },
+  { id: 'cl-45', section: 'Form W2G', text: 'Enter Box 13 - "State Identification"', checked: false },
+  { id: 'cl-46', section: 'Form W2G', text: 'Enter Box 15, 17, 18 if anything', checked: false },
+  { id: 'cl-47', section: 'Form W2G', text: 'Carry on with entering second part "If you are filing electronically, you MUST enter the following information"', checked: false },
+  { id: 'cl-48', section: 'Form W2G', text: 'Make sure "Information Smart Worksheet" is filled out', checked: false },
+
+  { id: 'cl-49', section: 'Form 1099-C', text: 'Note: EIN will not auto-populate name and address', checked: false },
+  { id: 'cl-50', section: 'Form 1099-C', text: "Enter Creditor's Name", checked: false },
+  { id: 'cl-51', section: 'Form 1099-C', text: "Enter Creditor's address", checked: false },
+  { id: 'cl-52', section: 'Form 1099-C', text: 'Enter EIN', checked: false },
+  { id: 'cl-53', section: 'Form 1099-C', text: 'Enter Box 1-4', checked: false },
+  { id: 'cl-54', section: 'Form 1099-C', text: 'Enter Box 5-7', checked: false },
+  { id: 'cl-55', section: 'Form 1099-C', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-56', section: 'Form 1099-DIV', text: 'Go to Schedule B', checked: false },
+  { id: 'cl-57', section: 'Form 1099-DIV', text: "Enter Payer's Name", checked: false },
+  { id: 'cl-58', section: 'Form 1099-DIV', text: 'Enter Box 1a and 1b', checked: false },
+  { id: 'cl-59', section: 'Form 1099-DIV', text: 'Enter Box 2a and 2b (if anything)', checked: false },
+  { id: 'cl-60', section: 'Form 1099-DIV', text: 'Enter Box 3 (if anything)', checked: false },
+  { id: 'cl-61', section: 'Form 1099-DIV', text: 'Check if Box 3-14 have any amounts', checked: false },
+  { id: 'cl-62', section: 'Form 1099-DIV', text: "Double click \"Payer's Name\"", checked: false },
+  { id: 'cl-63', section: 'Form 1099-DIV', text: "Scroll down and enter Payer's Info (TIN & Address)", checked: false },
+  { id: 'cl-64', section: 'Form 1099-DIV', text: "Click \"Transfer Address from Federal Info Works\" for the Recipient's Info", checked: false },
+  { id: 'cl-65', section: 'Form 1099-DIV', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-66', section: 'Form 1099-G', text: 'Note: You do not need to name the "Worksheet Description" — just leave as "Copy 1"', checked: false },
+  { id: 'cl-67', section: 'Form 1099-G', text: 'Note: Up to 3 forms fit on one worksheet', checked: false },
+  { id: 'cl-68', section: 'Form 1099-G', text: 'Determine if form is for Taxpayer/Spouse/Joint', checked: false },
+  { id: 'cl-69', section: 'Form 1099-G', text: 'Enter EIN', checked: false },
+  { id: 'cl-70', section: 'Form 1099-G', text: 'Enter "State Abbreviation"', checked: false },
+  { id: 'cl-71', section: 'Form 1099-G', text: 'If form is for unemployment, enter amount on Box 1 and Box 4 (if Federal Income Withheld)', checked: false },
+  { id: 'cl-72', section: 'Form 1099-G', text: 'If form is for tax refund, see if it automatically populates', checked: false },
+  { id: 'cl-73', section: 'Form 1099-G', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-74', section: 'Form 1099-INT', text: 'Go to Schedule B', checked: false },
+  { id: 'cl-75', section: 'Form 1099-INT', text: "Enter Payer's Name", checked: false },
+  { id: 'cl-76', section: 'Form 1099-INT', text: 'Enter Box 1-3', checked: false },
+  { id: 'cl-77', section: 'Form 1099-INT', text: "Double click Payer's Name", checked: false },
+  { id: 'cl-78', section: 'Form 1099-INT', text: "Scroll down and enter Payer's Info (TIN & Address)", checked: false },
+  { id: 'cl-79', section: 'Form 1099-INT', text: "Click \"Transfer Address from Federal Info Works\" for the Recipient's info", checked: false },
+  { id: 'cl-80', section: 'Form 1099-INT', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-81', section: 'Form 1099-MISC/1099-NEC', text: 'Enter EIN', checked: false },
+  { id: 'cl-82', section: 'Form 1099-MISC/1099-NEC', text: "Enter Payer's Name", checked: false },
+  { id: 'cl-83', section: 'Form 1099-MISC/1099-NEC', text: 'Click Box if it is for spouse', checked: false },
+  { id: 'cl-84', section: 'Form 1099-MISC/1099-NEC', text: 'Enter Box 1-4', checked: false },
+  { id: 'cl-85', section: 'Form 1099-MISC/1099-NEC', text: "Scroll down and enter Payer's Address", checked: false },
+  { id: 'cl-86', section: 'Form 1099-MISC/1099-NEC', text: "Click \"Transfer Address from Federal Info Works\" for the Recipient's Info", checked: false },
+  { id: 'cl-87', section: 'Form 1099-MISC/1099-NEC', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-88', section: 'Form 1099-R', text: 'Enter EIN', checked: false },
+  { id: 'cl-89', section: 'Form 1099-R', text: 'Check that name and address are correct', checked: false },
+  { id: 'cl-90', section: 'Form 1099-R', text: 'Click Box if it is for spouse', checked: false },
+  { id: 'cl-91', section: 'Form 1099-R', text: 'Enter Box 1 and 2', checked: false },
+  { id: 'cl-92', section: 'Form 1099-R', text: 'Check checkbox on 2b if filled on form', checked: false },
+  { id: 'cl-93', section: 'Form 1099-R', text: 'Enter Box 3-6 if they have amounts', checked: false },
+  { id: 'cl-94', section: 'Form 1099-R', text: 'Enter "Distribution Code" for Box 7', checked: false },
+  { id: 'cl-95', section: 'Form 1099-R', text: 'If Box 14-1 or 16-1 have an amount, enter 15-1; if no amount on 14-1/16-1, no need to enter Box 15-1', checked: false },
+  { id: 'cl-96', section: 'Form 1099-R', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-97', section: 'Form 1099-SSA', text: 'Type "Social Security" under "Where Do I Enter" to look for the form', checked: false },
+  { id: 'cl-98', section: 'Form 1099-SSA', text: 'Scroll down at the bottom in ProSeries until you see the "Imported Form SSA-1099"', checked: false },
+  { id: 'cl-99', section: 'Form 1099-SSA', text: 'Enter Box 2, 3, 4, 5, & 6 if amounts are present on the form', checked: false },
+  { id: 'cl-100', section: 'Form 1099-SSA', text: 'On the form, check the "Description of amount in Box 3" for amounts related to Medicare B, C, & D', checked: false },
+  { id: 'cl-101', section: 'Form 1099-SSA', text: 'Enter Medicare B, C, & D under Ln C, D, & E if needed (make sure to check if it\'s for the spouse or taxpayer)', checked: false },
+  { id: 'cl-102', section: 'Form 1099-SSA', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-103', section: 'Form 1098', text: "Enter Recipient/Lender's Name and Address", checked: false },
+  { id: 'cl-104', section: 'Form 1098', text: "Enter Recipient/Lender's EIN", checked: false },
+  { id: 'cl-105', section: 'Form 1098', text: 'Enter Box 1-3 (always amounts in these)', checked: false },
+  { id: 'cl-106', section: 'Form 1098', text: 'Enter Box 5-6 (if it has any amounts)', checked: false },
+  { id: 'cl-107', section: 'Form 1098', text: "If Payer/Borrower's address is the same as property address, check Box 7", checked: false },
+  { id: 'cl-108', section: 'Form 1098', text: 'Input Box 9', checked: false },
+  { id: 'cl-109', section: 'Form 1098', text: 'Input Box 10 (if no amount in Box 10, then check summary part on 1098 — Property Tax/Real Estate Taxes Paid/Taxes Paid)', checked: false },
+  { id: 'cl-110', section: 'Form 1098', text: 'Check proper Box for "Mortgage was used for" (if you do not know, you can leave it blank)', checked: false },
+  { id: 'cl-111', section: 'Form 1098', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-112', section: 'Form 1098-E', text: "Enter Lender's Name (a)", checked: false },
+  { id: 'cl-113', section: 'Form 1098-E', text: 'Choose Borrower (b)', checked: false },
+  { id: 'cl-114', section: 'Form 1098-E', text: 'Enter Student Loan Interest — Box 1 (e)', checked: false },
+  { id: 'cl-115', section: 'Form 1098-E', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-116', section: 'Form 1098-T', text: 'Choose if the Taxpayer/Spouse is Student', checked: false },
+  { id: 'cl-117', section: 'Form 1098-T', text: 'If student is a dependent, make sure to check "Edu Tuition and Fees" on Info Works', checked: false },
+  { id: 'cl-118', section: 'Form 1098-T', text: "Enter Filer's Name and Address", checked: false },
+  { id: 'cl-119', section: 'Form 1098-T', text: "Enter Filer's EIN", checked: false },
+  { id: 'cl-120', section: 'Form 1098-T', text: 'Enter Box 1 - "Payments received for qualified tuition"', checked: false },
+  { id: 'cl-121', section: 'Form 1098-T', text: 'Input Boxes 4-10', checked: false },
+  { id: 'cl-122', section: 'Form 1098-T', text: 'Double check your form to make sure all entries match', checked: false },
+
+  { id: 'cl-123', section: 'Form 1095-A', text: 'Check to see if all people on the return are covered. If yes, check the box that automatically adds all people on the return.', checked: false },
+  { id: 'cl-124', section: 'Form 1095-A', text: 'If the return only covers the Spouse or Taxpayer, choose the correct box to populate the information.', checked: false }
+];
+
+// Reference-only list — informational, not a checkable checklist.
+const FORMS_MUST_ENTER = [
+  'W2', 'W2G', '1099-C', '1099-DIV', '1099-G', '1099-NEC', '1099-R', '1099-SSA',
+  '1098', '1098-E', '1098-T', 'Real Estate Taxes (Principal residence on Sch A)',
+  'DMV Registration (Personal Property Tax on Sch A)', 'Non-cash Contributions Donations'
+];
+
+let checklistExpandedSections = new Set(['Canopy']);
+
+function loadChecklist() {
+  try {
+    const saved = localStorage.getItem('taxace_inputter_checklist_v2');
+    if (saved) return JSON.parse(saved);
+  } catch (e) { /* fall through to defaults */ }
+  localStorage.setItem('taxace_inputter_checklist_v2', JSON.stringify(DEFAULT_CHECKLIST));
+  return DEFAULT_CHECKLIST.slice();
+}
+
+function saveChecklist(items) {
+  localStorage.setItem('taxace_inputter_checklist_v2', JSON.stringify(items));
+}
+
+function toggleChecklistSection(section) {
+  if (checklistExpandedSections.has(section)) {
+    checklistExpandedSections.delete(section);
+  } else {
+    checklistExpandedSections.add(section);
+  }
+  renderChecklist();
+}
+
+function renderChecklist() {
+  const listEl = document.getElementById('checklistItems');
+  if (!listEl) return;
+
+  const items = loadChecklist();
+
+  // Populate section datalist for the add-item form
+  const sections = [...new Set(items.map(i => i.section).filter(Boolean))];
+  const catList = document.getElementById('checklistCategoryList');
+  if (catList) catList.innerHTML = sections.map(s => `<option value="${s}">`).join('');
+
+  if (items.length === 0) {
+    listEl.innerHTML = '<p style="color: var(--ink-soft); text-align: center; padding: 30px;">No checklist items yet. Add your first one below.</p>';
+  } else {
+    // Group by section, preserving original order of first appearance
+    const grouped = {};
+    const order = [];
+    items.forEach(i => {
+      const sec = i.section || 'General';
+      if (!grouped[sec]) { grouped[sec] = []; order.push(sec); }
+      grouped[sec].push(i);
+    });
+
+    let html = '';
+
+    // Static reference card for forms an Inputter must enter
+    html += `
+      <div style="background: var(--paper-dim); border: 1px solid var(--line); border-radius: 3px; padding: 14px 16px; margin-bottom: 16px;">
+        <div style="font-weight: 700; font-size: 12px; margin-bottom: 8px;">📎 Forms You Must Enter as an Inputter (reference)</div>
+        <div style="font-size: 12px; color: var(--ink-soft); line-height: 1.8;">${FORMS_MUST_ENTER.join(' &nbsp;•&nbsp; ')}</div>
+      </div>
+    `;
+
+    order.forEach(sec => {
+      const secItems = grouped[sec];
+      const checkedCount = secItems.filter(i => i.checked).length;
+      const expanded = checklistExpandedSections.has(sec);
+
+      html += `
+        <div style="border: 1px solid var(--line); border-radius: 3px; margin-bottom: 10px; overflow: hidden;">
+          <div onclick="toggleChecklistSection('${sec.replace(/'/g, "\\'")}')" style="display:flex; justify-content:space-between; align-items:center; padding: 10px 14px; background: var(--paper-dim); cursor: pointer;">
+            <span style="font-weight: 700; font-size: 13px;">${expanded ? '▾' : '▸'} ${sec}</span>
+            <span style="font-size: 11.5px; color: var(--ink-soft); font-weight: 600;">${checkedCount} / ${secItems.length}</span>
+          </div>
+          ${expanded ? `<div style="padding: 10px 14px;">` + secItems.map(i => `
+            <div class="checklist-item ${i.checked ? 'checked' : ''}">
+              <input type="checkbox" ${i.checked ? 'checked' : ''} onchange="toggleChecklistItem('${i.id}')">
+              <span class="checklist-text">${i.text.replace(/\n/g, '<br>')}</span>
+              <button class="del-btn" onclick="deleteChecklistItem('${i.id}')">🗑</button>
+            </div>
+          `).join('') + `</div>` : ''}
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  const checkedCount = items.filter(i => i.checked).length;
+  const progressEl = document.getElementById('checklistProgress');
+  if (progressEl) progressEl.textContent = items.length > 0 ? `${checkedCount} / ${items.length} completed` : '';
+}
+
+function toggleChecklistItem(id) {
+  const items = loadChecklist();
+  const item = items.find(i => i.id === id);
+  if (item) item.checked = !item.checked;
+  saveChecklist(items);
+  renderChecklist();
+}
+
+function deleteChecklistItem(id) {
+  if (!confirm('Delete this checklist item?')) return;
+  const items = loadChecklist().filter(i => i.id !== id);
+  saveChecklist(items);
+  renderChecklist();
+}
+
+function addChecklistItem() {
+  const text = document.getElementById('newChecklistItem').value.trim();
+  const section = document.getElementById('newChecklistCategory').value.trim() || 'General';
+
+  if (!text) {
+    showAlert('Enter a checklist item', 'error', 'checklistAlertBox');
+    return;
+  }
+
+  const items = loadChecklist();
+  items.push({ id: 'cl-' + Date.now(), text, section, checked: false });
+  saveChecklist(items);
+
+  checklistExpandedSections.add(section);
+
+  document.getElementById('newChecklistItem').value = '';
+  document.getElementById('newChecklistCategory').value = '';
+
+  renderChecklist();
+  showAlert('Checklist item added', 'success', 'checklistAlertBox');
+}
+
+function uncheckAllChecklist() {
+  if (!confirm('Uncheck all items? This resets progress for a new client.')) return;
+  const items = loadChecklist();
+  items.forEach(i => i.checked = false);
+  saveChecklist(items);
+  renderChecklist();
+}
+
+// ============================================================
+// KNOWLEDGE BASE (source: TaxAce Inputter's Training Guide)
+// ============================================================
+const DEFAULT_KB = [
+  {
+    id: 'kb-1',
+    title: "1. Purpose of This Guide & the Inputter's Role",
+    category: 'Getting Started',
+    link: '',
+    content: `Inputting is one of the most important parts of the tax preparation process at TaxAce. The Inputter's job is singular and specific: transpose whatever information exists in a client's tax documents into ProSeries, our tax software, accurately and completely.
+
+✅ What you ARE responsible for:
+• Locating the right client file, reading the client's tax organizer and tax documents, and entering the numbers and information exactly as they appear into the correct fields in ProSeries.
+
+🚫 What you are NOT responsible for:
+• Talking to the client, deciding what forms mean for the client's tax strategy, linking income to Schedule C/E, or judging whether a number "makes sense." That analysis belongs to the Reviewers and Preparers.
+
+⚠ Note: If you don't know how to enter something, or a document looks unusual, don't guess. Move it to the "Not Inputted" folder and/or flag it in the team's Inputting channel. Inputters are chosen because they are organized, careful, and trustworthy — accuracy matters more than speed. Mistakes here can affect a client's refund or balance due by thousands of dollars.
+
+🔗 References:
+Slack: https://taxace.slack.com/archives/C02QF193JCU/p1769128413388989
+Slack: https://taxace.slack.com/archives/CS7M8FW03/p1768946520994069`
+  },
+  {
+    id: 'kb-2',
+    title: '2. Deadlines You Must Know',
+    category: 'Getting Started',
+    link: '',
+    content: `TaxAce operates on two layers of deadlines: the IRS/agency deadline (when the return is actually due) and the TaxAce internal document deadline (when we need the client's paperwork so we have time to prepare it). The TaxAce deadline always falls on the 22nd of the month before the agency deadline.
+
+Filing Type — Agency Deadline — TaxAce Document Deadline
+• Partnerships & S-Corporations (original) — March 15 — February 22
+• Individuals & Corporations (original) — April 15 — March 22
+• Partnerships & S-Corporations (extended) — September 15 — August 22
+• Individuals & Corporations (extended) — October 15 — September 22
+
+If a client cannot meet the original TaxAce document deadline but tells us before that deadline that they need more time, we file them an extension. Extended returns then follow the September/October agency deadlines above, with document deadlines the month before (August 22 / September 22).`
+  },
+  {
+    id: 'kb-3',
+    title: '3. Before You Start Inputting',
+    category: 'Getting Started',
+    link: '',
+    content: `3.1 Set Up Your Workspace
+• Use both monitors: Canopy open on one screen, ProSeries open on the other.
+• In Canopy, keep a filtered view (e.g., named "Inputting") that shows only tasks that are ready to be inputted. A task shows "Ready" status when it's available to grab.
+
+3.2 Grabbing a File — The Rules
+• Rule #1 — no cherry-picking: You must grab the task with the earliest/most-overdue due date in the queue. You are not allowed to browse client files first to find the "easiest" client and pull that one instead. This is treated as cheating and can result in a write-up, because Inputters are paid on commission per return — grabbing only easy files shortchanges the rest of the team.
+• Rule #2 — claim it: Once you grab a task, remove every other assignee so only your name remains, then change the task status to "In Progress." This tells everyone else the file is taken and prevents duplicate work.
+• Rule #3 — check for an existing file first: Never create a brand-new ProSeries client file. Use Find Client and search by last name (try first name too if the last name is common). If the client already has a file, prior-year information (address, dependents, W-2 employer info, etc.) will already be there and carries forward — don't recreate it. If you truly cannot find the client, post in the Inputting Slack channel and ask HQ to create the file (new-client files are created centrally to avoid duplicate/misspelled files).
+
+🚫 Do not: start a new ProSeries file for a client without first confirming with the team that no file exists.
+
+3.3 Know Your Home Base
+ProSeries is organized by return type (Home Base). Make sure you are working under the correct Home Base — Individual (1040) for individual returns, S-Corp for S-Corporation returns, and so on. You will not find an S-Corp return sitting under the Individual home base. The EF Center is for returns that are already filed/e-filed — you will rarely touch it as an Inputter.`
+  },
+  {
+    id: 'kb-4',
+    title: '4. How Client Files Are Organized in Canopy',
+    category: 'Canopy & Files',
+    link: '',
+    content: `Files are stored by tax year, not by form type. Always confirm the tax year on a document before filing/inputting it — if it doesn't say 2025 (or whatever year you're working), it does not belong in the 2025 folder.
+
+4.1 Folder Structure
+Client → [Tax Year] Files (e.g., "2025 Files")
+  → Legal Docs — Engagement/Signature/Extension Forms
+  → Tax Docs — ID, Social Security cards, prior Returns, current-year Tax Forms
+    → Duplicates (move any duplicate document here)
+    → Not Inputted (move any document you cannot or should not input here)
+
+4.2 Duplicates Folder
+If you see the same document twice (two copies of the same W-2, two of the same 1099-G, etc.), move one copy into the Duplicates folder. Spotting and moving duplicates is the Inputter's job — if a Reviewer catches a duplicate you left behind, it gets flagged in the team channel.
+
+4.3 Not Inputted Folder
+Not every tax form is meant to be entered by an Inputter. If a document is not on the approved forms list (see "13. Do's & Don'ts — Master Checklist"), or you genuinely don't know how to enter it, move it to Not Inputted. Reviewers always check this folder first before reviewing a return, so this is not "failing" — it is the correct process.
+• If an entire document/file cannot be input, move the whole file and label it with your initials + "Not Inputted."
+• If only one page of a multi-page document is the problem, label just that page with your initials + "Not Inputted" rather than moving the whole file.`
+  },
+  {
+    id: 'kb-5',
+    title: '5. ProSeries Navigation Basics',
+    category: 'ProSeries Basics',
+    link: '',
+    content: `5.1 Screen Layout
+• Left panel — "Forms in Use" (forms already active in the return) and "Common Forms" (forms you can add).
+• "Where Do I Enter?" — the single most useful tool. Instead of hunting through the forms list, type the form name or number (e.g., "W2," "1099-INT," "Social Security") and select the correct worksheet from the results. Use this constantly.
+• Main window — shows whichever form/worksheet is currently selected, starting with the Federal Information Worksheet.
+• Fed / SD tabs — switch between the Federal return and the State return. Only add a state if you've confirmed it is the client's actual filing state — once added, only certain staff can remove it, and an incorrect state will print with the return. Some states (e.g., Nevada) have no filing requirement at all.
+• Quick Zoom — jump directly to a related section (e.g., Quick Zoom to Client Status, or to Part VIII Direct Deposit) instead of scrolling.
+• Home icon — returns you to the Home Base and prompts you to Save. Always click "Yes/Save" if you want your entries kept — clicking through without saving can discard your work.
+
+5.2 Where to Find the Client's Data
+• Canopy → Client → Tasks → "[Year] 1040 Tax Organizer" (or Home tab, which shows the same task) — this is the questionnaire the client filled out. It mirrors the layout of the ProSeries Info Worksheet almost exactly, so work top-to-bottom through both side by side.
+• Canopy → Files → [Year] Files → Legal Docs — downloaded/completed organizer, engagement letter, signed forms.
+• Canopy → Files → [Year] Files → Tax Docs — the actual income/deduction tax documents (W-2s, 1099s, 1098s, etc.).
+• Document Checklist (also given to clients) — use it yourself as a guide to what documents you should expect for a given client situation (homeowner, self-employed, student, etc.), so you know what might be missing.`
+  },
+  {
+    id: 'kb-6',
+    title: '6. The Federal Information Worksheet (Info Wks)',
+    category: 'ProSeries Basics',
+    link: '',
+    content: `This is always the first form you complete. Where do I enter → "Info Wks", or it's simply the first form shown when you open the client. If the client is existing, most fields already carry over from last year — your job becomes double-checking that the carried-over information is still current, not re-typing it.
+
+6.1 Part I — Personal Information
+• Enter exactly what is in the client's Tax Organizer: legal name, SSN, occupation, date of birth, email, phone.
+• Always confirm whether a document/organizer entry belongs to the Taxpayer or the Spouse before entering it — check the correct radio button/column. Getting this backwards changes the return.
+• Only enter what the client actually provided. If the organizer left a field blank (e.g., filing status), leave it blank in ProSeries too — do not guess or default a value, because it can recalculate the whole return incorrectly.
+
+6.2 Social Security Numbers
+• For a returning client, the SSN typically carries over — confirm it matches the Social Security card on file.
+• For a new client, we need an actual copy of the Social Security card (not just the number written in the organizer) — flag this as an item needed if it's missing.
+
+6.3 ID Verification (Driver's License / State ID)
+• Where do I enter → "ID" → ID Verification Worksheet → Driver's License Detail / State Identification Card Detail.
+• Issuing state is usually CA — confirm from the document.
+• License number sits in the middle of the license, next to the photo.
+• Issue date is labeled "ISS" in the bottom-right corner of the license.
+• Expiration date is directly below the license number.
+• Both Taxpayer and Spouse need their own ID entered in the correct section — never enter a spouse's license under the taxpayer's fields or vice versa.
+
+🚫 Do not: guess or reuse an expired ID's data. If a returning client's stored ID is expired, ProSeries will show an error — that error is your cue to request an updated ID in the comment section (e.g., "Please upload updated ID for [Taxpayer Name]").
+
+6.4 Bank Information / Direct Deposit (Part VIII)
+• New client: request a voided check. If they already entered routing/account numbers in the organizer, you have the info — but still flag "please confirm this bank account" as an item needed.
+• Existing client: the bank info carries over. You only need to confirm the last four digits of the account still match what the client intends to use — flag "please confirm bank account ending in ####" as an item needed.
+• Enter Account Type (Checking/Savings), Routing Number, and Account Number under Part VIII Direct Deposit (reachable via Quick Zoom).
+
+6.5 Identity Protection PIN (IP PIN)
+• The client organizer asks whether the client received an IP PIN letter from the IRS. If they answered "Yes" and did not upload the letter, add "copy of IP PIN letter" to your items needed.
+• If the letter is provided, enter the 6-digit PIN under Info Wks → Identity Protection PIN (Taxpayer / Spouse lines).
+• Check the name on the IP PIN letter carefully — sometimes the letter belongs to a dependent, not the taxpayer or spouse. Enter it under the correct person.
+• Mark an entered IP PIN as "Estimated" (right-click → Mark as Estimated) if you're not 100% sure it's for the correct tax year — an incorrect IP PIN causes e-file rejection.
+
+6.6 Filing Status & Dependents
+• Filing status: copy exactly what the client indicated (Single, Married Filing Jointly, Married Filing Separately, Head of Household, Qualifying Surviving Spouse). If nothing was indicated, leave it blank — don't assume.
+• Dependents: enter first name, last name, SSN, relationship, and date of birth exactly as provided. Do NOT enter dependent "codes" yourself — those are carried over from prior years or set by preparers/reviewers, not typed fresh by Inputters.
+
+6.7 Preparer Assignment & Third-Party Designee (Part IV)
+• Check the box that enables the Third-Party Designee section — without checking it, that information won't populate at all.
+• Assign the correct 2025 Preparer (found in the client's Canopy profile under Custom Fields → 2025 Preparers, not last year's). If unsure who the preparer is, ask in the Inputting channel rather than guessing.
+
+6.8 Electronic Filing (Part VI)
+• Always check the Federal e-file box, and the State e-file box if the client has a filing requirement in that state — based on their address on the Info Wks.
+
+🚫 Do not: leave Electronic Filing unchecked. Unchecking/skipping it generates a wave of extra errors later that someone else has to clean up right before e-filing.`
+  },
+  {
+    id: 'kb-7',
+    title: '7. Form 1040 — The Master Summary',
+    category: 'Forms Reference',
+    link: '',
+    content: `Form 1040 is the "tree" that holds everything you enter. Every income document flows into a specific line. Learning this map is the fastest way to know which form to open in ProSeries for any tax document a client hands you.
+
+1040 Line — Source Document / Schedule
+• Line 1 (1a–1z) — Form W-2 (wages)
+• Line 2a — Form 1099-INT (interest income)
+• Line 3 — Form 1099-DIV (dividend income)
+• Line 4a — Form 1099-R (IRA distributions)
+• Line 5a — Form 1099-R (pensions & annuities)
+• Line 6a — Form SSA-1099 (Social Security benefits)
+• Line 7 — Schedule D (capital gains/losses)
+• Line 8 — Schedule 1 (additional income)
+• Line 9 — Total Income (sum of the above)
+• Line 10 — Adjustments to income, from Schedule 1 Part II
+• Line 11 — Adjusted Gross Income (Line 9 minus Line 10)
+• Line 12 — Standard or Itemized Deduction (Schedule A)
+
+⚠ Note: A simple decoder for form-name letters: "W" and "1099" forms are INCOME. "1098" forms are DEDUCTIONS. "1095" forms are HEALTHCARE. Within 1099s: INT = interest, DIV = dividend, R = retirement, G = government payment, C = cancellation of debt, SSA = Social Security. This pattern will save you constant lookup time.`
+  },
+  {
+    id: 'kb-8',
+    title: '8. Income Documents — What They Are & Where They Go',
+    category: 'Forms Reference',
+    link: '',
+    content: `For every income form, the same core checklist applies before you touch the box numbers: confirm the tax year matches the return you're working on, confirm whether the form belongs to the Taxpayer or Spouse, confirm the Payer's EIN/TIN and address, and check whether the form is marked "Corrected" (scroll to the bottom of the ProSeries worksheet and check the Corrected box only if the paper form itself is marked corrected/void). Only after that do you copy the dollar amounts, box for box, from the paper form into ProSeries — never enter a number you don't see on the form, and never skip one that's there.
+
+8.1 Form W-2 — Wage and Tax Statement
+• Received when the client works as an employee (not a contractor).
+• Where do I enter → "W2" → W-2 Worksheet → Create New Copy → enter the employer's name (this creates a new copy per employer).
+• Enter EIN; name/address usually auto-populate from the EIN — verify them anyway (auto-fill can pull in an old address).
+• Check the box if the W-2 belongs to the Spouse.
+• Enter Box 1 (wages) and Box 2 (federal withholding); "Automatically Calculate" can estimate Boxes 3–6, but uncheck and manually enter them if they don't match the paper form.
+• Enter Box 12 codes exactly as shown (e.g., only "C" if that's the only code present — leave D/DD blank if not on the form).
+• Box 14 often is where "extra" state items belong — e.g., SDI amounts are sometimes mistakenly printed in Boxes 18–20 on the paper form but should be entered as Box 14 in ProSeries.
+• Box 15–17 (state wages/tax): enter, then check the confirmation checkbox that appears once Box 15 matches the number in Canopy.
+• If a client has never had a W-2 from this exact employer/name combination before, always create a new W-2 copy for them — do not reuse a spouse's or a different family member's existing W-2 with the same employer name.
+• Use Quick Zoom to add additional W-2 copies if the client has more than one employer.
+
+8.2 Form 1099-INT — Interest Income
+• Where do I enter → "1099-INT" → select Schedule B (always Schedule B — there is no direct-entry option).
+• Enter the payer's name and Box 1 (interest income). Even $1 amounts must be entered.
+• Double-click the payer's name to open the full worksheet; scroll down to enter the payer's EIN/address and click "Transfer Address from Federal Info Wks" to populate the recipient (client) address automatically.
+
+8.3 Form 1099-DIV — Dividends and Distributions
+• Same path as 1099-INT: Where do I enter → "1099-DIV" → Schedule B.
+• Enter Box 1a (ordinary dividends), Box 1b (qualified dividends), and Box 4 (federal tax withheld) if present.
+• Double-click the payer's name to complete payer address/EIN, same as 1099-INT.
+
+8.4 Form 1099-R — Retirement / Pension Distributions
+• Received when a client takes money out of a retirement account, or receives pension/annuity payments.
+• Where do I enter → "1099R" → 1099-R Worksheet → Create.
+• Critical: at the top of the worksheet, check the applicable box that matches the actual form (regular 1099-R vs. CSA 1099-R / annuity statement). Checking the wrong box can make otherwise non-taxable amounts taxable and materially change the client's refund.
+• Enter the payer's info, Box 1 (gross distribution), Box 2a (taxable amount), Box 4 (federal withholding), and the Distribution Code in Box 7 exactly as shown.
+
+8.5 Form SSA-1099 — Social Security Benefit Statement
+• Do not confuse with 1099-SA (Health Savings Account) — different form entirely.
+• Where do I enter → type "Social Security" (not the form number) → Social Security Benefits Worksheet.
+• Scroll to the very bottom of the worksheet to enter data — do NOT check any of the boxes near the top of this worksheet. Checking them manually can incorrectly make the benefit taxable.
+• Enter the Beneficiary SSN first — ProSeries will automatically assign the entry to Taxpayer or Spouse based on whose SSN you entered.
+• Enter Box 3 (benefits paid) and Box 6 (voluntary federal withholding) if present.
+• Look at "Description of amount in Box 3" on the paper form for Medicare Part B/C/D premiums, and enter those amounts under the corresponding Medicare B/C/D lines further up the worksheet — these are a deduction and are easy to miss.
+
+8.6 Form 1099-G — Certain Government Payments
+• Two very different situations use the same form: (1) a state tax refund, or (2) unemployment compensation.
+• Where do I enter → "1099G" → Certain Government Payments Worksheet → Create Copy (up to 3 per worksheet; Quick Zoom for more).
+• A state refund 1099-G is typically Joint (both taxpayer and spouse names appear) — select "Joint." Enter the state abbreviation, payer EIN, and the refund amount; check whether it auto-populates the taxable refund calculation.
+• An unemployment 1099-G is entered under Box 1 (unemployment compensation) and Box 4 (federal tax withheld) if applicable.
+• A client can receive multiple 1099-Gs in one year (e.g., catching up on several prior years at once) — use Quick Zoom to generate extra copies rather than overwriting one.
+
+8.7 Form W-2G — Certain Gambling Winnings
+• Up to 4 W-2Gs fit on one worksheet; use Quick Zoom for more.
+• Where do I enter → "W2G" → W-2G Worksheet.
+• Enter EIN, confirm payer's name, check the Spouse box if applicable, Box 1 (Reportable Winnings), Box 4 (Federal Income Tax Withheld), Box 13 (State Identification), Boxes 15/17/18 if present.
+• Only fill in the boxes that actually have data on the paper form — many boxes on the standard W-2G layout are typically blank.
+• Always flag for the reviewer: a client with any W-2G needs a win/loss statement from the casino, so we can potentially deduct gambling losses. If the client already uploaded one, you don't need to ask again — just don't miss it if they haven't.
+
+8.8 Form 1099-C — Cancellation of Debt
+• Issued when a creditor forgives/cancels a debt (e.g., a credit card balance) — the forgiven amount is generally taxable income.
+• Where do I enter → "1099-C" → Cancellation of Debt → Create (enter the creditor's name).
+• Note: the EIN does NOT auto-populate name/address here — you must enter the creditor's name and address manually along with the EIN.
+• Enter Boxes 1–4 (date, amount discharged, interest) and Boxes 5–7 as shown on the form.
+
+8.9 Form 1099-NEC / 1099-MISC — Non-Employee Compensation / Miscellaneous Income
+• 1099-NEC Box 1 = nonemployee compensation, which typically feeds Schedule C (self-employment/sole proprietor income).
+• 1099-MISC Box 1 = Rents (feeds Schedule E, rental income); Box 3 = Other Income (not tied to a specific schedule).
+• Where do I enter → "1099-NEC" or "1099-MISC" → Create new copy (enter payer's name).
+• Enter EIN, check Spouse box if applicable, enter the box amounts, and scroll down to enter the payer's address. Click "Transfer Address from Federal Info Wks" for the recipient's address.
+• Do not link Schedule C or E yourself: if ProSeries shows the Schedule C (or E) line turning red/flagged because the income needs to be linked to a business or rental activity, leave it alone. Linking business/rental schedules is a Reviewer/Preparer task, not an Inputter task.
+• If the paper form or the client's notes explicitly say the amount is "Other Income" (not business/rental), you may check the "Other Income" box in ProSeries to clear that link requirement — but only when the form or organizer specifically indicates that.
+• Always flag for the reviewer: any 1099-NEC/MISC with Box 1 (rent) suggests a rental property — flag that the client appears to have rental activity so the reviewer can request rental income/expense details. Any indication of self-employment income should also be flagged so the reviewer can request business income/expense documentation.`
+  },
+  {
+    id: 'kb-9',
+    title: '9. Schedule 1 — Additional Income & Adjustments to Income',
+    category: 'Forms Reference',
+    link: '',
+    content: `Schedule 1 is attached to Form 1040 and captures anything that doesn't fit neatly into a W-2/1099 line above, plus adjustments that lower the client's taxable income.
+
+9.1 Part I — Additional Income
+• Taxable refunds (Line 1) & Unemployment (Line 7): both come from Form 1099-G — see "8. Income Documents".
+• Alimony received (Line 2a): requires the date of the original divorce/separation agreement (Line 2b), because whether alimony is taxable depends on that date. If the client indicates they receive alimony but didn't provide the divorce decree, flag "divorce decree needed" for the reviewer — we cannot process alimony without it.
+• Business income or loss (Line 3): comes from Schedule C (self-employment/sole proprietor) or Schedule E (rental), generated by 1099-NEC or 1099-MISC. You are entering the source 1099, not the Schedule C/E itself.
+• Health Savings Account / HSA (Line 13): comes from Form 1099-SA (note: one "S", different from SSA). Where do I enter → "1099SA." Enter the Distribution Code exactly as shown — do not check extra boxes, since checking the wrong box can make an otherwise non-taxable HSA distribution taxable.
+• Alimony paid (Line 19a): if the client (not the recipient) pays alimony, you need the recipient's Social Security Number (the ex-spouse's) and the divorce decree. If not provided in the organizer, flag it as an item needed — we cannot process this without the recipient's SSN and the decree.
+• Educator expenses / Moving expenses / SEP-IRA etc.: these come directly from client-provided itemized lists, not a standard IRS form — enter what the client provides. Moving expenses only apply to active military clients.
+
+9.2 Part II — Adjustments to Income
+• Student Loan Interest Deduction (Line 21): comes from Form 1098-E. Where do I enter → type "student" (do not search "1098-E" directly, it won't surface the right worksheet) → Student Loan Interest Deduction Worksheet. Enter the lender's name (Box a), select Borrower — Taxpayer or Spouse (Box b), and enter Box 1 interest paid (Box e).`
+  },
+  {
+    id: 'kb-10',
+    title: '10. Schedule A — Itemized Deductions',
+    category: 'Forms Reference',
+    link: '',
+    content: `Schedule A only matters if the client's itemized deductions exceed their standard deduction — but as an Inputter, you enter every itemized item the client provides regardless; the software/Reviewer decides whether Schedule A is actually used on the return.
+
+10.1 Medical & Dental Expenses
+• Where do I enter → Schedule A → Medical and Dental Expenses section.
+• Medicare premiums auto-flow: if you already entered Medicare Part B/C/D premiums from the SSA-1099 "Description of amount in Box 3" section, do not re-enter them here — they already carry into the medical deduction. Re-entering them double-counts the deduction.
+• Enter any other client-provided medical expense totals (doctor, dental, prescriptions, mileage) exactly as itemized by the client — do not add up individual receipts yourself if the client has not already totaled them; flag for the reviewer instead of guessing at a total.
+
+10.2 Real Estate / Property Taxes
+• Property tax bills are very commonly paid in two installments per year (varies by county) — look for two payment amounts/dates on the statement, not one.
+• Matching logic: match the property address on the tax bill to the client's home address on the Federal Info Wks. If the address matches the client's personal residence, it's a personal residence property tax (Schedule A). If the address is different from the client's home address, it is likely a rental or second property — flag this for the reviewer rather than entering it on Schedule A, since rental property taxes belong on Schedule E, not Schedule A.
+• Where do I enter (personal residence) → Schedule A → Taxes You Paid → Real Estate Taxes.
+• Enter the full annual amount actually paid during the tax year (both installments combined, if both were paid within the year) — not the billed amount, if they differ.
+
+10.3 DMV Registration / Personal Property Tax
+• Many states charge a deductible personal-property-tax component within the annual vehicle registration fee — this is NOT the whole registration fee, only the tax portion.
+• Where do I enter → Schedule A → Taxes You Paid → Personal Property Taxes.
+• If the client has multiple vehicles: itemize each vehicle separately rather than combining into one number — this makes it easier for the reviewer to verify each entry against its own registration statement.
+• If the registration statement does not clearly break out the deductible tax portion, use your state's DMV fee lookup/schedule (ask your team lead for the current link for your assigned state) to determine which portion of the fee is tax-deductible before entering it.
+
+10.4 Form 1098 — Mortgage Interest Statement
+• Where do I enter → "1098" → Home Mortgage Interest — Create new copy per lender/loan.
+• Joint vs. Taxpayer designation: check the names on the 1098 — if both taxpayer and spouse are listed as borrowers, mark it Joint; if only one spouse is listed, assign it to that specific person, not automatically to the Taxpayer.
+• Box 7 — "Is this the main home?" checkbox is critical: check this box only when the mortgaged property is the client's main home (matches the address on the Federal Info Wks). If the 1098 is for a second home or rental property, do NOT check this box — leaving it unchecked routes the interest correctly instead of misapplying it to the personal-residence deduction.
+• Property tax fallback: if Box 10 (property taxes paid, sometimes labeled "Other") is blank on the 1098 but the lender's annual mortgage statement (a separate, longer document the client may also upload) shows property taxes paid through an escrow account, use that annual statement figure for the Schedule A real estate tax entry instead — many lenders pay property tax via escrow but don't always populate Box 10 on the 1098 itself.
+• Enter Box 1 (mortgage interest received), Box 2 (outstanding mortgage principal), Box 3 (origination date), and Box 11 (mortgage acquisition date) as shown.
+
+10.5 Charitable Contributions — Cash vs. Non-Cash
+• Cash donations: Where do I enter → Schedule A → Gifts to Charity → Cash Contributions. Enter the total(s) as provided by the client/organization letters — list each organization separately if the client provided separate receipts.
+• Non-cash donations: Where do I enter → Schedule A → Gifts to Charity → Noncash Contributions (or Form 8283 Worksheet for larger amounts). Enter the organization, description of items donated, and the client's stated value. Do not estimate a fair market value yourself — use only the value the client or the donation receipt (e.g., a Goodwill/Salvation Army receipt) provides.
+• If total non-cash donations to a single organization exceed $500, additional detail (acquisition date, cost basis) may be required on Form 8283 — flag for the reviewer if that detail wasn't provided in the client's documents.
+
+10.6 Childcare — Form 2441 / Dependent Care
+• Where do I enter → "2441" or "childcare" → Child and Dependent Care Expenses Worksheet.
+• Enter the provider's name, address, and Tax ID/SSN (required — flag for reviewer if the client's provider statement is missing a Tax ID/SSN, since the credit cannot be processed without it).
+• Allocate per child, per provider: if there are multiple children and/or multiple providers during the year, enter each child/provider combination as its own line rather than combining amounts.
+• Do not calculate totals yourself: if the client's provided statement lists multiple payments across the year without a pre-totaled sum, flag it for the reviewer rather than adding up the individual payments yourself — the reviewer will confirm the total is correct before it's entered.
+
+10.7 Form 1098-T — Tuition Statement / Education Credits
+• Where do I enter → "1098-T" → Student Information Worksheet — Create new copy per student.
+• Dependent-student linkage: 1098-T entries must be linked to the correct dependent on the return (or to the taxpayer/spouse if they are the student). Confirm the student's name on the 1098-T matches a dependent already entered on the Federal Info Wks before creating the copy — if the student is not yet listed as a dependent, flag this for the reviewer rather than creating a duplicate/unlinked entry.
+• Enter Box 1 (payments received for qualified tuition) and Box 5 (scholarships/grants) exactly as shown — the credit calculation itself is handled by the software/reviewer, not the Inputter.`
+  },
+  {
+    id: 'kb-11',
+    title: '11. Health Insurance Forms — 1095-A / 1095-B / 1095-C',
+    category: 'Forms Reference',
+    link: '',
+    content: `• Form 1095-A (Marketplace/Exchange coverage) is the only one Inputters actively enter: if a client bought insurance through the Health Insurance Marketplace (healthcare.gov or a state exchange), they will receive a 1095-A, and it must be entered — it directly affects the return (premium tax credit reconciliation).
+• Where do I enter (1095-A) → "1095-A" → Federal Information Worksheet Part V or the 1095-A Worksheet directly. Enter the Marketplace identifier, and the monthly amounts from Part III columns A (premiums), B (SLCSP), and C (advance payment of premium tax credit) for each month coverage was in effect.
+• 1095-B and 1095-C are informational only and are NOT entered on the federal return by the Inputter: coverage from an employer (1095-C) or other non-Marketplace insurer (1095-B) is instead reflected through the State return's Healthcare Worksheet, using simple coverage checkboxes — not by transcribing the 1095-B/C form itself.
+• On the Healthcare Worksheet, check "All 12 Months" if the client and all dependents had qualifying coverage the entire year. If coverage was only partial-year, check the specific months covered instead — do not default to "All 12 Months" without confirming with the client's documents.
+• Watch for a coverage gap: an uncovered gap can trigger an Individual Shared Responsibility (ISR) penalty in states that still enforce one. If the client's documents show a gap and no explanation, flag it for the reviewer rather than guessing at coverage months.
+• Retired or elderly clients are frequently on Medicare (Part A counts as qualifying coverage) even without a 1095 form at all — the SSA-1099 or a Medicare card/statement is enough evidence of coverage; check "All 12 Months" for that client unless other documents suggest otherwise.`
+  },
+  {
+    id: 'kb-12',
+    title: '12. Flagging Items Needed — The Canopy Comment Section',
+    category: 'Workflow & Rules',
+    link: '',
+    content: `• Single source of truth: if a document is missing, unclear, or something is needed from the client before the return can be finished, the ONLY place to record that is the comment section on the client's task in Canopy. Do not duplicate the "item needed" note inside ProSeries (e.g., don't write it into a worksheet field just to leave yourself a reminder) — Reviewers only check Canopy comments, so anything noted only inside ProSeries will be missed.
+
+⚠ Note: This was an explicit correction the team made after some Inputters were leaving notes in both places — always default to Canopy comments only, since that's the single place Reviewers check.
+
+• Format each comment clearly: name the specific form/document needed and why (e.g., "Client's 1099-R doesn't specify the distribution code in Box 7 — need a legible copy or the code confirmed with the client" rather than just "need more info").
+• If the client's overall file is missing enough information that the return truly cannot be completed, also change the client's status/checkbox in Canopy to "Need More Info From Client" (or your firm's equivalent status) so it surfaces on the reviewer's/coordinator's queue, in addition to the specific comment.
+
+12.1 Common Scenarios to Flag
+• Missing win/loss statement when a W-2G is present.
+• Missing recipient SSN or divorce decree for alimony paid.
+• Missing childcare provider Tax ID/SSN.
+• Rental or business activity implied by a 1099-MISC/NEC that hasn't been substantiated with expense detail.
+• Any document that is illegible, cut off, or appears to be missing a page.
+• Any form type you do not recognize or that is not on the authorized forms list — do not guess how to enter it.`
+  },
+  {
+    id: 'kb-13',
+    title: "13. Do's & Don'ts — Master Checklist",
+    category: 'Workflow & Rules',
+    link: '',
+    content: `13.1 Every Time You Touch a File
+• Initial every form you enter — this is how Reviewers and QA can trace which Inputter touched which document if a question comes up later.
+• The "mark as estimated" trick: if you must move forward on a number that is not yet 100% confirmed (and the client relationship/timeline requires progress), you may mark the entry as estimated in ProSeries rather than leaving it blank or guessing silently — but you must still leave a Canopy comment explaining what's estimated and why, so the reviewer knows to confirm it before filing.
+• Anything you are not authorized to enter, cannot confidently identify, or that isn't on the authorized forms list below goes into the client's "Not Inputted" subfolder in Canopy — do not skip it silently and do not guess.
+• Take the oldest-due-date file available to you — never cherry-pick easier or newer files, since pay is commission-based per file and cherry-picking is unfair to the rest of the team.
+• Engage on Slack — ask questions there when you're unsure rather than guessing or sitting stuck; team leads and reviewers are there to help in real time.
+• Manage your time expectations realistically per file based on its complexity — a simple W-2-only return should move much faster than a return with multiple rental properties, self-employment, and itemized deductions.
+
+13.2 Master List of Forms Inputters Are Authorized to Enter
+• Personal info: Federal Information Worksheet (personal info, SSNs, ID verification, bank/direct deposit, IP PIN, filing status, dependents).
+• Income: W-2, W-2G, 1099-INT, 1099-DIV, 1099-R, SSA-1099, 1099-G, 1099-C, 1099-NEC, 1099-MISC, 1099-SA.
+• Adjustments/Other income (Schedule 1): alimony received/paid (with required decree/SSN), educator expenses, moving expenses (military only), student loan interest (1098-E).
+• Itemized deductions (Schedule A): medical/dental totals, real estate taxes, personal property/DMV taxes, Form 1098 mortgage interest, cash and non-cash charitable contributions.
+• Credits: Form 2441 (childcare), Form 1098-T (education) — entry only, not credit calculation.
+• Health coverage: Form 1095-A (federal), Healthcare Worksheet checkboxes for 1095-B/C (state).
+
+🚫 Do not: enter anything not on this list without first checking with your team lead — when in doubt, put it in the Not Inputted folder and flag it in Canopy rather than guessing.`
+  }
+];
+
+function loadKb() {
+  try {
+    const saved = localStorage.getItem('taxace_knowledge_base_v2');
+    if (saved) return JSON.parse(saved);
+  } catch (e) { /* fall through to defaults */ }
+  localStorage.setItem('taxace_knowledge_base_v2', JSON.stringify(DEFAULT_KB));
+  return DEFAULT_KB.slice();
+}
+
+function saveKb(entries) {
+  localStorage.setItem('taxace_knowledge_base_v2', JSON.stringify(entries));
+}
+
+function renderKnowledgeBase() {
+  const listEl = document.getElementById('kbList');
+  if (!listEl) return;
+
+  const entries = loadKb();
+  const search = (document.getElementById('kbSearch')?.value || '').toLowerCase();
+  const categoryFilter = document.getElementById('kbCategoryFilter')?.value || '';
+
+  const categories = [...new Set(entries.map(e => e.category).filter(Boolean))].sort();
+  const catSelect = document.getElementById('kbCategoryFilter');
+  if (catSelect) {
+    const currentVal = catSelect.value;
+    catSelect.innerHTML = '<option value="">All Categories</option>' +
+      categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    catSelect.value = currentVal;
+  }
+  const catList = document.getElementById('kbCategoryList');
+  if (catList) catList.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+
+  let filtered = entries.filter(e => {
+    const matchesSearch = !search || e.title.toLowerCase().includes(search) || e.content.toLowerCase().includes(search);
+    const matchesCategory = !categoryFilter || e.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  filtered.sort((a, b) => a.title.localeCompare(b.title));
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<p style="color: var(--ink-soft); text-align: center; padding: 30px;">No guides found. Try a different search or add a new guide.</p>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(e => `
+    <div class="kb-card" id="kbCard-${e.id}">
+      <div class="kb-head" onclick="toggleKbCard('${e.id}')">
+        <span class="kb-title">${e.title}</span>
+        ${e.category ? `<span class="kb-category">${e.category}</span>` : ''}
+      </div>
+      <div class="kb-body">
+        ${e.content.replace(/</g, '&lt;')}
+        ${e.link ? `<br><a class="kb-link" href="${e.link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 Reference Link</a>` : ''}
+        <div class="kb-actions">
+          <button onclick="event.stopPropagation(); deleteKbEntry('${e.id}')">🗑 Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleKbCard(id) {
+  const card = document.getElementById('kbCard-' + id);
+  if (card) card.classList.toggle('expanded');
+}
+
+function openAddKbForm() {
+  document.getElementById('addKbForm').style.display = 'block';
+}
+
+function closeAddKbForm() {
+  document.getElementById('addKbForm').style.display = 'none';
+  document.getElementById('newKbTitle').value = '';
+  document.getElementById('newKbCategory').value = '';
+  document.getElementById('newKbLink').value = '';
+  document.getElementById('newKbContent').value = '';
+}
+
+function addKbEntry() {
+  const title = document.getElementById('newKbTitle').value.trim();
+  const category = document.getElementById('newKbCategory').value.trim();
+  const link = document.getElementById('newKbLink').value.trim();
+  const content = document.getElementById('newKbContent').value.trim();
+
+  if (!title || !content) {
+    showAlert('Title and guide content are required', 'error', 'kbAlertBox');
+    return;
+  }
+
+  const entries = loadKb();
+  entries.push({ id: 'kb-' + Date.now(), title, category, link, content });
+  saveKb(entries);
+  closeAddKbForm();
+  renderKnowledgeBase();
+  showAlert(`"${title}" added to the knowledge base`, 'success', 'kbAlertBox');
+}
+
+function deleteKbEntry(id) {
+  if (!confirm('Delete this guide?')) return;
+  const entries = loadKb().filter(e => e.id !== id);
+  saveKb(entries);
+  renderKnowledgeBase();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  applyThemeLabel(localStorage.getItem('taxace-hub-theme') || 'light');
+  loadData();
+  document.getElementById('taxYear').value = new Date().getFullYear();
+  document.getElementById('clientSearch').addEventListener('keyup', renderList);
+
+  // Render instantly from cache, then reconcile with the shared worksheet.
+  renderList();
+  updateStats();
+  updateInputterFilter();
+  renderTemplatesList();
+  renderChecklist();
+  renderKnowledgeBase();
+  loadFromServer(true);
+  loadTemplatesFromServer();
+
+  // Keep this browser reasonably fresh even if nobody clicks Refresh.
+  setInterval(() => loadFromServer(true), 60000);
+
+  console.log('✓ Dashboard ready');
+});
+</script>
+
+</body>
+</html>

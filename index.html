@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaxAce Tracker Hub</title>
+<script>
+  // Apply saved theme before paint to avoid a light-mode flash.
+  (function() {
+    var saved = localStorage.getItem('taxace-hub-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ffffff;
+    --paper-dim: #f2f2f2;
+    --ink: #241f18;
+    --ink-soft: #5c5343;
+    --rust: #b5502e;
+    --rust-dim: #8f3f24;
+    --teal: #3f6a63;
+    --teal-dim: #2f504b;
+    --green: #4c6b47;
+    --line: #dcdcdc;
+  }
+
+  html[data-theme="dark"] {
+    --paper: #1b1815;
+    --paper-dim: #241f19;
+    --ink: #efe9df;
+    --ink-soft: #b3a891;
+    --rust: #e08a5e;
+    --rust-dim: #c96f45;
+    --teal: #6fa89f;
+    --teal-dim: #578780;
+    --green: #7fa375;
+    --line: #3a352b;
+  }
+
+  * { box-sizing: border-box; }
+
+  .theme-toggle {
+    padding: 7px 14px;
+    border: 1px solid var(--ink);
+    border-radius: 20px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .theme-toggle:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+  }
+
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding: 28px 36px;
+    background: linear-gradient(135deg, transparent, transparent 38px, rgba(181,80,46,0.035) 38px, rgba(181,80,46,0.035) 76px) var(--paper);
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    margin: 0 0 4px;
+    font-size: 30px;
+  }
+
+  header .sub {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 36px 64px;
+  }
+
+  .status-strip {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 36px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    flex-wrap: wrap;
+  }
+
+  .status-strip strong { color: var(--ink); }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent, var(--rust));
+    border-radius: 6px;
+    padding: 26px 26px 22px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 8px 24px rgba(36,31,24,0.10);
+    transform: translateY(-2px);
+    border-color: var(--accent, var(--rust));
+  }
+
+  .card .icon {
+    font-size: 26px;
+    margin-bottom: 14px;
+  }
+
+  .card h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 19px;
+    margin: 0 0 8px;
+  }
+
+  .card p.desc {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+
+  .tab-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--paper-dim);
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+
+  .card .enter {
+    margin-top: auto;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--accent, var(--rust));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card .enter .arrow {
+    transition: transform .18s ease;
+  }
+
+  .card:hover .enter .arrow {
+    transform: translateX(4px);
+  }
+
+  .card.reviewer { --accent: var(--teal); }
+  .card.inputter { --accent: var(--rust); }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding: 20px 36px 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗂️ TaxAce Tracker Hub</h1>
+  <div class="sub">Shared workspace for the Tax Inputter and Tax Reviewer dashboards</div>
+  <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" style="margin-top: 14px;">🌙 Dark Mode</button>
+</header>
+
+<main>
+  <div class="status-strip">
+    <span><span class="live-dot"></span><strong>Live sync</strong> — both dashboards read/write the same client data</span>
+    <span>Data source: Canopy</span>
+  </div>
+
+  <div class="cards">
+    <a class="card inputter" href="./inputter-dashboard.html">
+      <div class="icon">📝</div>
+      <h2>Inputter Dashboard</h2>
+      <p class="desc">Track and edit individual client documents with status updates — shared live with the Reviewer dashboard.</p>
+      <div class="tab-pills">
+        <span class="pill">✓ Client List</span>
+        <span class="pill">➕ Add Client</span>
+        <span class="pill">📋 Manage Documents</span>
+        <span class="pill">☑️ Inputter Checklist</span>
+        <span class="pill">📚 Knowledge Base</span>
+      </div>
+      <div class="enter">Open dashboard <span class="arrow">→</span></div>
+    </a>
+
+    <a class="card reviewer" href="./reviewer-dashboard.html">
+      <div class="icon">📋</div>
+      <h2>Tax Reviewer Dashboard</h2>
+      <p class="desc">Review and manage documents inputted from clients — shared live with the Inputter dashboard.</p>
+      <div class="tab-pills">
+        <span class="pill">👤 Assigned to Me</span>
+        <span class="pill">📊 Summary</span>
+        <span class="pill">🔄 Canopy Sync</span>
+        <span class="pill">📖 Tax Term Reference</span>
+      </div>
+      <div class="enter">Open dashboard <span class="arrow">→</span></div>
+    </a>
+  </div>
+</main>
+
+<footer>TaxAce Group Inc. — Tax Department Tracker Hub</footer>
+
+<script>
+  function applyThemeLabel(theme) {
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  }
+  function toggleTheme() {
+    const current = localStorage.getItem('taxace-hub-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('taxace-hub-theme', next);
+    document.documentElement.setAttribute('data-theme', next);
+    applyThemeLabel(next);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    applyThemeLabel(localStorage.getItem('taxace-hub-theme') || 'light');
+  });
+</script>
+
+</body>
+</html>
